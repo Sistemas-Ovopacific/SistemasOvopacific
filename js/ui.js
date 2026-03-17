@@ -1,0 +1,278 @@
+// ============================================================
+//  ui.js — Manejo de la Interfaz de Usuario (UI) y Vistas
+// ============================================================
+
+const ui = {
+    // ── Elementos DOM cacheados ──
+    els: {
+        getConnectionStatus: () => document.getElementById('connection-status'),
+        getProductosTbody: () => document.getElementById('productos-tbody'),
+        getInventarioTbody: () => document.getElementById('inventario-tbody'),
+        getEntradasTbody: () => document.getElementById('entradas-tbody'),
+        getSalidasTbody: () => document.getElementById('salidas-tbody'),
+        getSummaryGrid: () => document.getElementById('summary-grid'),
+    },
+
+    setConexionStatus(estado) {
+        const el = this.els.getConnectionStatus();
+        if (!el) return;
+        const dot = el.querySelector('.dot');
+        const text = el.querySelector('span:last-child');
+        
+        dot.className = 'dot ' + (estado === 'ok' ? 'dot-success' : estado === 'error' ? 'dot-danger' : 'dot-warning');
+        text.textContent = estado === 'ok' ? 'Conectado' : estado === 'error' ? 'Sin conexión' : 'Conectando...';
+    },
+
+    actualizarMiniStats(productos) {
+        const total = productos.length;
+        const bajoStock = productos.filter(p => Number(p.Cantidad) <= 5).length;
+        const cats = new Set(productos.map(p => p.Categoria)).size;
+
+        utils.animateNumber('stat-total', total);
+        utils.animateNumber('stat-bajo-stock', bajoStock);
+        utils.animateNumber('stat-categorias', cats);
+    },
+
+    renderizarProductos(productos, filtro = '') {
+        const tbody = this.els.getProductosTbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let lista = productos;
+        if (filtro) {
+            const f = filtro.toLowerCase().trim();
+            lista = productos.filter(p =>
+                (p.Nombre || '').toLowerCase().includes(f) ||
+                (String(p.ID) || '').toLowerCase().trim().includes(f) ||
+                (p.Categoria || '').toLowerCase().includes(f)
+            );
+        }
+
+        if (lista.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+                <i class="fa-solid fa-box-open"></i> No hay productos registrados
+            </td></tr>`;
+            return;
+        }
+
+        lista.forEach(p => {
+            const qty = Number(p.Cantidad) || 0;
+            let badgeClass = qty > 20 ? 'stock-high' : qty > 5 ? 'stock-medium' : 'stock-low';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="product-code">${utils.escHtml(p.ID)}</span></td>
+                <td>
+                    <div class="product-name">${utils.escHtml(p.Nombre)}</div>
+                </td>
+                <td><span class="category-tag">${utils.escHtml(p.Categoria)}</span></td>
+                <td class="desc-cell">${utils.escHtml(p.Descripcion || '—')}</td>
+                <td><span class="stock-badge ${badgeClass}">${qty}</span></td>
+                <td>${utils.escHtml(p.Unidad)}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn edit" onclick="MainApp.abrirEditarProducto('${utils.escAttr(p.ID)}')" title="Editar">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button class="action-btn del" onclick="MainApp.eliminarProducto('${utils.escAttr(p.ID)}')" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    renderizarInventario(productos, filtro = '') {
+        const tbody = this.els.getInventarioTbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let lista = [...productos];
+        if (filtro) {
+            lista = lista.filter(p =>
+                (p.Nombre || '').toLowerCase().includes(filtro) ||
+                (p.Categoria || '').toLowerCase().includes(filtro)
+            );
+        }
+
+        if (lista.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No hay productos en inventario</td></tr>`;
+            return;
+        }
+
+        lista.forEach((p, idx) => {
+            const qty = Number(p.Cantidad) || 0;
+            let estado, estadoClass;
+            if (qty === 0) { estado = 'Agotado'; estadoClass = 'status-danger'; }
+            else if (qty <= 5) { estado = 'Stock Bajo'; estadoClass = 'status-warning'; }
+            else if (qty <= 20) { estado = 'Normal'; estadoClass = 'status-medium'; }
+            else { estado = 'Abundante'; estadoClass = 'status-success'; }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="row-num">${idx + 1}</td>
+                <td><span class="product-code">${utils.escHtml(p.ID)}</span></td>
+                <td class="product-name">${utils.escHtml(p.Nombre)}</td>
+                <td><span class="category-tag">${utils.escHtml(p.Categoria)}</span></td>
+                <td>${utils.escHtml(p.Unidad)}</td>
+                <td><span class="qty-display">${qty}</span></td>
+                <td><span class="status-badge ${estadoClass}">${estado}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    renderizarEntradas(entradas) {
+        const tbody = this.els.getEntradasTbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (entradas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No hay entradas registradas</td></tr>`;
+            return;
+        }
+
+        // Ordenar las más recientes primero
+        const sorted = [...entradas].reverse();
+        sorted.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="mov-id">${utils.escHtml(String(e.ID_Movimiento || ''))}</span></td>
+                <td>${utils.escHtml(e.Nombre_Producto || e.ID_Producto || '')}</td>
+                <td><span class="qty-entrada">+${e.Cantidad}</span></td>
+                <td>${utils.formatearFecha(e.Fecha)}</td>
+                <td>${utils.escHtml(e.Observacion || '—')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    renderizarSalidas(salidas) {
+        const tbody = this.els.getSalidasTbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (salidas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No hay salidas registradas</td></tr>`;
+            return;
+        }
+
+        const sorted = [...salidas].reverse();
+        sorted.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="mov-id">${utils.escHtml(String(s.ID_Movimiento || ''))}</span></td>
+                <td>${utils.escHtml(s.Nombre_Producto || s.ID_Producto || '')}</td>
+                <td><span class="qty-salida">-${s.Cantidad}</span></td>
+                <td>${utils.formatearFecha(s.Fecha)}</td>
+                <td>${utils.escHtml(s.Observacion || '—')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    renderizarGrafica(productos, chartInstance) {
+        const ctx = document.getElementById('inventoryChart').getContext('2d');
+        const labels = productos.map(p => p.Nombre && p.Nombre.length > 20 ? p.Nombre.substring(0, 20) + '…' : (p.Nombre || 'N/A'));
+        const data = productos.map(p => Number(p.Cantidad) || 0);
+
+        const bgColors = data.map(qty => {
+            if (qty <= 5) return 'rgba(239,68,68,0.75)';
+            if (qty <= 20) return 'rgba(245,158,11,0.75)';
+            return 'rgba(16,185,129,0.75)';
+        });
+        const borderColors = bgColors.map(c => c.replace('0.75', '1'));
+
+        if (chartInstance) {
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = data;
+            chartInstance.data.datasets[0].backgroundColor = bgColors;
+            chartInstance.data.datasets[0].borderColor = borderColors;
+            chartInstance.update('active');
+        } else {
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Cantidad Disponible',
+                        data,
+                        backgroundColor: bgColors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `  ${ctx.parsed.y} ${productos[ctx.dataIndex]?.Unidad || 'unid.'}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.06)' },
+                            ticks: { color: '#94a3b8', font: { size: 12 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 40, minRotation: 20 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Resumen en tarjetas
+        const grid = this.els.getSummaryGrid();
+        if(grid) {
+            grid.innerHTML = '';
+            productos.forEach(p => {
+                const qty = Number(p.Cantidad) || 0;
+                let cls = qty > 20 ? 'sum-high' : qty > 5 ? 'sum-med' : 'sum-low';
+                grid.innerHTML += `
+                    <div class="sum-card ${cls}">
+                        <span class="sum-name">${utils.escHtml(p.Nombre)}</span>
+                        <span class="sum-qty">${qty}</span>
+                        <span class="sum-unit">${utils.escHtml(p.Unidad)}</span>
+                    </div>
+                `;
+            });
+            if (productos.length === 0) grid.innerHTML = '<p class="empty-state">Sin productos.</p>';
+        }
+        
+        return chartInstance;
+    },
+
+    renderizarSugerenciasInventario(productos) {
+        // Esta función puede usarse para la vista de inventario si se añade el elemento al HTML
+        const tbody = this.els.getInventarioTbody();
+        if (!tbody) return;
+        this.renderizarInventario(productos);
+    },
+
+    llenarSelectsProductos(productos) {
+        ['entrada-producto', 'salida-producto'].forEach(selId => {
+            const sel = document.getElementById(selId);
+            if (!sel) return;
+            const prev = sel.value;
+            sel.innerHTML = '<option value="" disabled selected>— Seleccione un producto —</option>';
+            productos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.ID;
+                opt.textContent = `${p.ID} — ${p.Nombre}`;
+                sel.appendChild(opt);
+            });
+            if (prev && productos.some(p => String(p.ID) === prev)) sel.value = prev;
+        });
+    }
+};
+
+window.ui = ui;

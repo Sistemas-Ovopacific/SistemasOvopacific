@@ -1,0 +1,168 @@
+/* ── Pantalla de carga ──────────────────────────────────── */
+#boot-screen {
+    position: fixed;
+    inset: 0;
+    background: #1a1040;   /* violeta oscuro que combina con indigo app */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    overflow: hidden;
+}
+
+#boot-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(129, 140, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(129, 140, 248, 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+}
+
+#boot-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(91,94,244,0.06) 0%, transparent 60%);
+}
+
+.boot-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    text-align: center;
+}
+
+/* ── Logo con anillos ──────────────────────────────────── */
+.boot-logo {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.boot-icon {
+    font-size: 2.4rem;
+    color: #c084fc;
+    position: relative;
+    z-index: 3;
+    filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.9)) drop-shadow(0 0 40px rgba(139, 92, 246, 0.6));
+    animation: bootIconAppear 0.6s ease-out;
+}
+
+.boot-rings { position: absolute; inset: 0; }
+
+.ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid;
+    animation: ringPulse 2s ease-out infinite;
+}
+
+.ring-1 { inset: 0;       border-color: rgba(99,102,241,0.5);  animation-delay: 0s; }
+.ring-2 { inset: -14px;   border-color: rgba(139,92,246,0.3);  animation-delay: 0.45s; }
+.ring-3 { inset: -28px;   border-color: rgba(167,139,250,0.15); animation-delay: 0.9s; }
+
+/* ── Texto de boot ─────────────────────────────────────── */
+.boot-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 4px;
+    text-shadow: 0 0 30px rgba(180, 130, 255, 0.7);
+}
+
+.boot-title span {
+    color: #a5b4fc;
+    text-shadow: 0 0 20px rgba(165, 180, 252, 0.8);
+}
+
+.boot-subtitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(200, 180, 255, 0.55);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+/* ── Barra de progreso ─────────────────────────────────── */
+.boot-bar-wrap {
+    width: 280px;
+    height: 3px;
+    background: rgba(180, 100, 255, 0.12);
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1px solid rgba(180, 100, 255, 0.2);
+}
+
+.boot-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #5b5ef4, #818cf8, #a5b4fc);
+    border-radius: 99px;
+    transition: width 0.35s ease;
+    box-shadow: 0 0 12px rgba(129, 140, 248, 0.7);
+}
+
+/* ── Mensajes de log ───────────────────────────────────── */
+.boot-log {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(200, 180, 255, 0.55);
+    letter-spacing: 0.5px;
+    min-height: 22px;
+    animation: textPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 1; }
+}
+
+/* ── Íconos flotantes (sutiles) ────────────────────────── */
+.hw-float {
+    position: absolute;
+    font-size: 1.6rem;
+    color: rgba(91, 94, 244, 0.10);
+    animation: floatHW linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hw-float-1 { left: 5%;  top: 20%; animation-duration: 20s; font-size: 2rem; }
+.hw-float-2 { left: 80%; top: 10%; animation-duration: 24s; animation-delay: 2s; font-size: 1.4rem; color: rgba(139,92,246,0.07); }
+.hw-float-3 { left: 15%; top: 70%; animation-duration: 18s; animation-delay: 1s; font-size: 1.8rem; color: rgba(167,139,250,0.07); }
+.hw-float-4 { left: 70%; top: 55%; animation-duration: 22s; animation-delay: 3s; font-size: 2.2rem; }
+.hw-float-5 { left: 45%; top: 5%;  animation-duration: 26s; animation-delay: 0.5s; font-size: 1.6rem; color: rgba(99,102,241,0.05); }
+.hw-float-6 { left: 88%; top: 75%; animation-duration: 19s; animation-delay: 4s; font-size: 1.5rem; color: rgba(139,92,246,0.06); }
+.hw-float-7 { left: 3%;  top: 85%; animation-duration: 25s; animation-delay: 1.5s; font-size: 2rem; }
+.hw-float-8 { left: 55%; top: 80%; animation-duration: 17s; animation-delay: 2.5s; font-size: 1.4rem; }
+
+/* ── Keyframes ─────────────────────────────────────────── */
+@keyframes bootIconAppear {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes ringPulse {
+    0%   { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0;   }
+}
+
+@keyframes floatHW {
+    0%   { transform: translateY(0)    rotate(0deg); opacity: 0.4; }
+    50%  { transform: translateY(-30px) rotate(5deg); opacity: 0.7; }
+    100% { transform: translateY(0)    rotate(0deg); opacity: 0.4; }
+}
+
+@keyframes bootScreenOut {
+    to { opacity: 0; transform: scale(1.02); }
+}
