@@ -8,8 +8,13 @@ const MainApp = {
         productos: [],
         entradas: [],
         salidas: [],
+        entregas: [],
+        inicioTareas: [], // simples
+        tareasRecurrentes: [],
+        bitacora: [],
         chartInstance: null,
-        vistaActual: 'productos'
+        vistaActual: '', // Se setea por el portal
+        moduloActual: ''
     },
 
     init() {
@@ -20,14 +25,33 @@ const MainApp = {
 
     // ── NAVEGACIÓN ──
     inicializarNavegacion() {
-        document.querySelectorAll('#nav-links li').forEach(li => {
+        document.querySelectorAll('#nav-links li, #nav-links-tareas li').forEach(li => {
             li.addEventListener('click', () => this.cambiarVista(li.dataset.view));
         });
     },
 
+    setMode(mode) {
+        this.state.moduloActual = mode;
+        if (mode === 'inventario') {
+            document.getElementById('nav-menu-inventario').style.display = 'block';
+            document.getElementById('nav-menu-tareas').style.display = 'none';
+            document.querySelector('.mini-stats').style.display = 'flex';
+            this.cambiarVista('productos');
+            document.getElementById('page-title').textContent = 'Inventario';
+            document.getElementById('page-subtitle').textContent = 'Gestión del almacén';
+        } else if (mode === 'tareas') {
+            document.getElementById('nav-menu-inventario').style.display = 'none';
+            document.getElementById('nav-menu-tareas').style.display = 'block';
+            document.querySelector('.mini-stats').style.display = 'none';
+            this.cambiarVista('inicio-tareas-view');
+            document.getElementById('page-title').textContent = 'Tareas';
+            document.getElementById('page-subtitle').textContent = 'Mis responsabilidades programadas';
+        }
+    },
+
     cambiarVista(vista) {
         this.state.vistaActual = vista;
-        document.querySelectorAll('#nav-links li').forEach(li => {
+        document.querySelectorAll('#nav-links li, #nav-links-tareas li').forEach(li => {
             li.classList.toggle('active', li.dataset.view === vista);
         });
         document.querySelectorAll('.view-section').forEach(sec => {
@@ -50,10 +74,14 @@ const MainApp = {
         ui.setConexionStatus('connecting');
 
         try {
-            const [p, e, s] = await Promise.all([
+            const [p, e, s, t, tS, tR, b] = await Promise.all([
                 api.get('getProductos'),
                 api.get('getEntradas'),
-                api.get('getSalidas')
+                api.get('getSalidas'),
+                api.get('getEntregas').catch(() => []), 
+                api.get('getTareas').catch(() => []), 
+                api.get('getTareasRecurrentes').catch(() => []), 
+                api.get('getBitacora').catch(() => []) 
             ]);
 
             if (p.error) throw new Error(p.error);
@@ -63,6 +91,11 @@ const MainApp = {
             this.state.productos = Array.isArray(p) ? p : [];
             this.state.entradas = Array.isArray(e) ? e : [];
             this.state.salidas = Array.isArray(s) ? s : [];
+            this.state.entregas = Array.isArray(t) ? t : (t && t.error ? [] : t);
+            
+            this.state.inicioTareas = Array.isArray(tS) ? tS : (tS && tS.error ? [] : tS);
+            this.state.tareasRecurrentes = Array.isArray(tR) ? tR : (tR && tR.error ? [] : tR);
+            this.state.bitacora = Array.isArray(b) ? b : (b && b.error ? [] : b);
 
             ui.setConexionStatus('ok');
             this.actualizarUI();
@@ -80,9 +113,15 @@ const MainApp = {
         ui.actualizarMiniStats(productos);
         ui.llenarSelectsProductos(productos);
 
+        if (vistaActual === 'inicio-tareas-view') {
+            ui.renderizarInicioTareas(this.state.inicioTareas);
+            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+            ui.renderizarBitacora(this.state.bitacora);
+        }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
         if (vistaActual === 'entradas') ui.renderizarEntradas(entradas);
         if (vistaActual === 'salidas') ui.renderizarSalidas(salidas);
+        if (vistaActual === 'entregas') ui.renderizarEntregas(this.state.entregas);
         if (vistaActual === 'grafica') {
             this.state.chartInstance = ui.renderizarGrafica(productos, chartInstance);
         }
@@ -95,6 +134,10 @@ const MainApp = {
         ];
         this.state.entradas = [];
         this.state.salidas = [];
+        this.state.entregas = [];
+        this.state.inicioTareas = [];
+        this.state.tareasRecurrentes = [];
+        this.state.bitacora = [];
         this.actualizarUI();
     },
 
@@ -149,6 +192,49 @@ const MainApp = {
         const hoy = new Date().toISOString().split('T')[0];
         document.getElementById('entrada-fecha').value = hoy;
         document.getElementById('salida-fecha').value = hoy;
+        
+        // Entregas
+        const formEntrega = document.getElementById('form-entrega');
+        if (formEntrega) {
+            formEntrega.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarEntrega();
+            });
+            document.getElementById('entrega-fecha').value = hoy;
+            
+            document.getElementById('filter-entrega-nombre').addEventListener('input', () => this.filtrarEntregas());
+            document.getElementById('filter-entrega-fecha').addEventListener('input', () => this.filtrarEntregas());
+        }
+
+        // Tareas del Inicio
+        const formInicioTarea = document.getElementById('form-inicio-tarea');
+        if (formInicioTarea) {
+            formInicioTarea.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarInicioTarea();
+            });
+            document.getElementById('inicio-tarea-fecha').value = hoy;
+        }
+
+        // Tareas Recurrentes Generar Checkboxes
+        ui.generarCheckboxesMeses();
+        
+        const formRecurrente = document.getElementById('form-tarea-recurrente');
+        if (formRecurrente) {
+            formRecurrente.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarTareaRecurrente();
+            });
+        }
+
+        const formBitacora = document.getElementById('form-bitacora');
+        if (formBitacora) {
+            document.getElementById('bitacora-fecha').value = hoy;
+            formBitacora.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarBitacora();
+            });
+        }
     },
 
     // ── ACCIONES DE PRODUCTO ──
@@ -314,10 +400,299 @@ const MainApp = {
         } finally {
             utils.ocultarLoader();
         }
+    },
+
+    // ── ACCIONES DE ENTREGAS ──
+    filtrarEntregas() {
+        const nombre = (document.getElementById('filter-entrega-nombre').value || '').toLowerCase().trim();
+        const fecha = document.getElementById('filter-entrega-fecha').value || '';
+        
+        let filtradas = this.state.entregas;
+        if (nombre) filtradas = filtradas.filter(t => t.Nombre.toLowerCase().includes(nombre));
+        if (fecha) filtradas = filtradas.filter(t => t.Fecha === fecha);
+        
+        ui.renderizarEntregas(filtradas);
+    },
+
+    async registrarEntrega() {
+        const nombre = document.getElementById('entrega-nombre').value.trim();
+        const fecha = document.getElementById('entrega-fecha').value;
+        const desc = document.getElementById('entrega-desc').value.trim();
+
+        if (!nombre || !fecha || !desc) {
+            utils.mostrarToast('Complete los campos de la entrega', 'warning');
+            return;
+        }
+
+        const nuevaEntrega = {
+            id: Date.now().toString(),
+            Nombre: nombre,
+            Fecha: fecha,
+            Descripcion: desc
+        };
+
+        utils.mostrarLoader('Registrando entrega...');
+        try {
+            const res = await api.post({ action: 'registrarEntrega', entrega: nuevaEntrega });
+            utils.mostrarToast(res.mensaje || 'Entrega registrada correctamente', 'success');
+            
+            this.state.entregas.push(nuevaEntrega);
+            
+            document.getElementById('form-entrega').reset();
+            document.getElementById('entrega-fecha').value = new Date().toISOString().split('T')[0];
+            
+            this.filtrarEntregas();
+        } catch (err) {
+            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarEntrega(id) {
+        if (!confirm('¿Desea eliminar esta entrega?')) return;
+        
+        utils.mostrarLoader('Eliminando entrega...');
+        try {
+            const res = await api.post({ action: 'eliminarEntrega', id });
+            utils.mostrarToast(res.mensaje || 'Entrega eliminada', 'success');
+            
+            this.state.entregas = this.state.entregas.filter(t => String(t.id) !== String(id));
+            this.filtrarEntregas();
+        } catch (err) {
+            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ── ACCIONES INICIO TAREAS ──
+    async registrarInicioTarea() {
+        const nombre = document.getElementById('inicio-tarea-nombre').value.trim();
+        const fecha = document.getElementById('inicio-tarea-fecha').value;
+        if (!nombre || !fecha) return;
+
+        const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha };
+        
+        utils.mostrarLoader('Registrando tarea...');
+        try {
+            const res = await api.post({ action: 'registrarTarea', tarea: nueva });
+            utils.mostrarToast(res.mensaje || 'Tarea programada', 'success');
+            
+            this.state.inicioTareas.push(nueva);
+            
+            document.getElementById('form-inicio-tarea').reset();
+            document.getElementById('inicio-tarea-fecha').value = new Date().toISOString().split('T')[0];
+            
+            ui.renderizarInicioTareas(this.state.inicioTareas);
+        } catch (err) {
+            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarInicioTarea(id) {
+        if (!confirm('¿Marcar tarea como completada (borrar)?')) return;
+        
+        utils.mostrarLoader('Completando tarea...');
+        try {
+            const res = await api.post({ action: 'eliminarTarea', id });
+            utils.mostrarToast(res.mensaje || 'Tarea completada', 'success');
+            
+            this.state.inicioTareas = this.state.inicioTareas.filter(t => String(t.id) !== String(id));
+            ui.renderizarInicioTareas(this.state.inicioTareas);
+        } catch (err) {
+            utils.mostrarToast('Error al completar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ── NAVEGACIÓN TABS TAREAS ──
+    switchTareasTab(tabId) {
+        document.querySelectorAll('.tareas-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.onclick.toString().includes(`'${tabId}'`));
+        });
+        document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
+        document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora' ? 'block' : 'none';
+        document.getElementById('tab-tareas-simples').style.display     = tabId === 'simples' ? 'block' : 'none';
+    },
+
+    // ── ACCIONES TAREAS RECURRENTES ──
+    async registrarTareaRecurrente() {
+        const nombre = document.getElementById('tr-nombre').value.trim();
+        if (!nombre) return;
+
+        // Recolectar meses tickeados (1 a 12)
+        const checkboxes = document.querySelectorAll('.tr-mes-check');
+        const mesesProg = [];
+        checkboxes.forEach(cb => {
+            if (cb.checked) mesesProg.push(Number(cb.value));
+        });
+
+        if (mesesProg.length === 0) {
+            utils.mostrarToast('Selecciona al menos un mes a programar', 'warning');
+            return;
+        }
+
+        const nueva = { id: Date.now().toString(), Nombre: nombre, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
+        
+        utils.mostrarLoader('Guardando configuración...');
+        try {
+            const res = await api.post({ action: 'guardarTareaRecurrente', tarea: nueva });
+            utils.mostrarToast(res.mensaje || 'Programación Anual guardada', 'success');
+            
+            this.state.tareasRecurrentes.push(nueva);
+            
+            document.getElementById('form-tarea-recurrente').reset();
+            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+        } catch (err) {
+            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async toggleMesTarea(idTarea, mes) {
+        // Encontrar la tarea en estado
+        const tarea = this.state.tareasRecurrentes.find(t => String(t.id) === String(idTarea));
+        if (!tarea) return;
+
+        utils.mostrarLoader('Actualizando estado...');
+        try {
+            const res = await api.post({ action: 'toggleMesTarea', id: idTarea, mes: mes });
+            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
+            
+            // Actualizar localmente si fue exitoso (el backend hace el push o pull real, pero nosotros pre-calculamos)
+            let comp = [];
+            try { comp = JSON.parse(tarea.MesesComp || "[]"); } catch (e) { comp = []; }
+            if (comp.includes(mes)) {
+                comp = comp.filter(m => m !== mes);
+            } else {
+                comp.push(mes);
+            }
+            tarea.MesesComp = JSON.stringify(comp);
+            
+            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+        } catch (err) {
+            utils.mostrarToast('Error de sincronización: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarTareaRecurrente(id) {
+        if (!confirm('¿Eliminar por completo esta programación anual?')) return;
+        utils.mostrarLoader('Eliminando programación...');
+        try {
+            await api.post({ action: 'eliminarTareaRecurrente', id });
+            utils.mostrarToast('Programación eliminada', 'success');
+            this.state.tareasRecurrentes = this.state.tareasRecurrentes.filter(t => String(t.id) !== String(id));
+            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+        } catch (err) {
+            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ── ACCIONES BITÁCORA ──
+    async registrarBitacora() {
+        const fecha = document.getElementById('bitacora-fecha').value;
+        const desc = document.getElementById('bitacora-desc').value.trim();
+        const fileInput = document.getElementById('bitacora-file');
+
+        if (!fecha || !desc || !fileInput.files[0]) return;
+
+        utils.mostrarLoader('Comprimiendo imagen...');
+        
+        try {
+            // Leer y comprimir la imagen localmente
+            const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
+            const payload = { id: Date.now().toString(), Fecha: fecha, Descripcion: desc, Imagen: base64Image };
+            
+            utils.mostrarLoader('Subiendo evidencia...');
+            const res = await api.post({ action: 'registrarBitacora', bitacora: payload });
+            utils.mostrarToast(res.mensaje || 'Registro completado', 'success');
+            
+            this.state.bitacora.unshift(payload); // Meter primero para que salga arriba
+            
+            document.getElementById('form-bitacora').reset();
+            document.getElementById('bitacora-fecha').value = new Date().toISOString().split('T')[0];
+            
+            ui.renderizarBitacora(this.state.bitacora);
+        } catch (err) {
+            utils.mostrarToast('Error en la Bitácora: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // Función auxiliar para comprimir al máximo una imagen subida por el usuario
+    comprimirImagenAbase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600; // Resolución tope para no crashear Google Sheets
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Comprimir drásticamente a JPEG (0.5 calidad)
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
+                    resolve(dataUrl);
+                };
+                img.onerror = error => reject(error);
+            };
+            reader.onerror = error => reject(error);
+        });
     }
 };
 
 window.MainApp = MainApp;
+
+window.startApp = function(mode) {
+    const landing = document.getElementById('landing-portal');
+    const appCont = document.getElementById('app-container');
+    
+    if (landing) {
+        landing.style.opacity = '0';
+        setTimeout(() => {
+            landing.style.display = 'none';
+            if (appCont) {
+                appCont.style.display = 'flex';
+                // Trigger a reflow
+                void appCont.offsetWidth;
+                appCont.style.opacity = '1';
+                MainApp.setMode(mode);
+            }
+        }, 600);
+    } else {
+        MainApp.setMode(mode);
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     MainApp.init();

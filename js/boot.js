@@ -174,7 +174,14 @@
             bootScreen.style.opacity = '0';
             setTimeout(() => {
                 bootScreen.style.display = 'none';
-                if (appCont) appCont.style.opacity = '1';
+                const landing = document.getElementById('landing-portal');
+                if (landing) {
+                    landing.style.display = 'flex';
+                    setTimeout(() => landing.style.opacity = '1', 50);
+                } else if (appCont) {
+                    appCont.style.display = 'flex';
+                    setTimeout(() => appCont.style.opacity = '1', 50);
+                }
                 startParticles();
             }, 600);
         }

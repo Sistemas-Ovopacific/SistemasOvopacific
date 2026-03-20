@@ -2,11 +2,11 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzuIWA77pOD03A0SgvKoNgcYiZJTPuN9vBPtjy3ioVc684pvdH_WzORb-gfwj7uhfsc/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyP_PhgyhUFvPeuT7iNJSstmH6hjIJcv1pLUOi5qI1bxD85LlwY5vBca7-7p8dM5vdUXA/exec';
 
 const api = {
     async get(action) {
-        const res = await fetch(`${GAS_URL}?action=${action}`);
+        const res = await fetch(`${GAS_URL}?action=${action}&t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     },
