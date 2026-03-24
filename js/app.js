@@ -512,7 +512,7 @@ const MainApp = {
     // ── NAVEGACIÓN TABS TAREAS ──
     switchTareasTab(tabId) {
         document.querySelectorAll('.tareas-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.onclick.toString().includes(`'${tabId}'`));
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
         document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
         document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora' ? 'block' : 'none';
@@ -522,6 +522,8 @@ const MainApp = {
     // ── ACCIONES TAREAS RECURRENTES ──
     async registrarTareaRecurrente() {
         const nombre = document.getElementById('tr-nombre').value.trim();
+        const categoriaEl = document.getElementById('tr-categoria');
+        const categoria = categoriaEl ? categoriaEl.value : 'General';
         if (!nombre) return;
 
         // Recolectar meses tickeados (1 a 12)
@@ -536,7 +538,7 @@ const MainApp = {
             return;
         }
 
-        const nueva = { id: Date.now().toString(), Nombre: nombre, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
+        const nueva = { id: Date.now().toString(), Nombre: nombre, Categoria: categoria, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
         
         utils.mostrarLoader('Guardando configuración...');
         try {

@@ -13,7 +13,9 @@ const ui = {
         getEntregasTbody: () => document.getElementById('entregas-tbody'),
         getInicioInventarioTbody: () => document.getElementById('inicio-inventario-tbody'),
         getInicioTareasTbody: () => document.getElementById('inicio-tareas-tbody'),
+        getInicioTareasCards: () => document.getElementById('inicio-tareas-cards'),
         getTareasRecurrentesTbody: () => document.getElementById('tareas-recurrentes-tbody'),
+        getMantCategoriasContainer: () => document.getElementById('mant-categorias-container'),
         getBitacoraGrid: () => document.getElementById('bitacora-grid'),
         getSummaryGrid: () => document.getElementById('summary-grid'),
     },
@@ -230,29 +232,70 @@ const ui = {
     },
 
     renderizarInicioTareas(tareas) {
+        // Intentar renderizar en el nuevo contenedor de tarjetas primero
+        const cardsEl = this.els.getInicioTareasCards();
         const tbody = this.els.getInicioTareasTbody();
-        if (!tbody) return;
-        tbody.innerHTML = '';
+
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
+
         if (!tareas || tareas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No hay tareas programadas</td></tr>`;
+            const emptyHtml = `<div class="mant-empty"><i class="fa-solid fa-list-check"></i><p>No hay tareas programadas. Usa el formulario de arriba para añadir.</p></div>`;
+            if (cardsEl) cardsEl.innerHTML = emptyHtml;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No hay tareas programadas</td></tr>`;
             return;
         }
-        
+
         const sorted = [...tareas].sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
-        
-        sorted.forEach(t => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${utils.formatearFecha(t.Fecha)}</td>
-                <td><strong>${utils.escHtml(t.Nombre)}</strong></td>
-                <td>
-                    <button class="action-btn del" onclick="MainApp.eliminarInicioTarea('${utils.escAttr(String(t.id))}')" title="Completar / Eliminar">
+
+        // Renderizar en el nuevo diseño de tarjetas (si existe el contenedor)
+        if (cardsEl) {
+            cardsEl.innerHTML = '';
+            sorted.forEach(t => {
+                const fechaTarea = new Date(t.Fecha + 'T00:00:00');
+                const diff = Math.round((fechaTarea - hoy) / 86400000);
+                let barClass, badgeClass, badgeText;
+                if (diff === 0) { barClass = 'urgencia-hoy'; badgeClass = 'badge-hoy'; badgeText = 'Hoy'; }
+                else if (diff < 0) { barClass = 'urgencia-venc'; badgeClass = 'badge-venc'; badgeText = 'Vencida'; }
+                else { barClass = 'urgencia-prox'; badgeClass = 'badge-prox'; badgeText = `En ${diff} día${diff!==1?'s':''}`; }
+
+                const card = document.createElement('div');
+                card.className = 'tarea-simple-card';
+                card.innerHTML = `
+                    <div class="tarea-urgencia-bar ${barClass}"></div>
+                    <div class="tarea-simple-info">
+                        <div class="tarea-simple-nombre">${utils.escHtml(t.Nombre)}</div>
+                        <div class="tarea-simple-fecha">
+                            <i class="fa-regular fa-calendar"></i>
+                            ${utils.formatearFecha(t.Fecha)}
+                            <span class="tarea-status-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                    </div>
+                    <button class="action-btn del" onclick="MainApp.eliminarInicioTarea('${utils.escAttr(String(t.id))}')" title="Marcar completada">
                         <i class="fa-solid fa-check"></i>
                     </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+                `;
+                cardsEl.appendChild(card);
+            });
+        }
+
+        // Fallback: también llenar tbody si existe (compatibilidad)
+        if (tbody) {
+            tbody.innerHTML = '';
+            sorted.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${utils.formatearFecha(t.Fecha)}</td>
+                    <td><strong>${utils.escHtml(t.Nombre)}</strong></td>
+                    <td>
+                        <button class="action-btn del" onclick="MainApp.eliminarInicioTarea('${utils.escAttr(String(t.id))}')" title="Completar">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
     },
 
     // ── TAREAS RECURRENTES ──
@@ -261,66 +304,124 @@ const ui = {
         if (!container) return;
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         container.innerHTML = meses.map((m, i) => `
-            <label style="display: flex; align-items: center; gap: 5px; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+            <label class="mes-pill-label">
                 <input type="checkbox" class="tr-mes-check" value="${i + 1}"> ${m}
             </label>
         `).join('');
     },
 
     renderizarTareasRecurrentes(tareas) {
-        const tbody = this.els.getTareasRecurrentesTbody();
-        if (!tbody) return;
-        tbody.innerHTML = '';
+        // Actualizar label del año
+        const yearLabel = document.getElementById('mant-year-label');
+        if (yearLabel) yearLabel.textContent = new Date().getFullYear();
+
+        const container = this.els.getMantCategoriasContainer();
+        // Fallback a tbody si el container nuevo no existe
+        if (!container) {
+            const tbody = this.els.getTareasRecurrentesTbody();
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Sin datos</td></tr>';
+            return;
+        }
+        container.innerHTML = '';
+
         if (!tareas || tareas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No hay tareas recurrentes programadas este año</td></tr>`;
+            container.innerHTML = `
+                <div class="mant-empty">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <p>No hay actividades programadas. Usa el formulario de arriba para añadir.</p>
+                </div>`;
             return;
         }
 
-        const mesesLabel = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+        // Colores e íconos por categoría
+        const catStyles = {
+            'Computadoras y Laptops':  { color: '#5b5ef4', icon: 'fa-laptop' },
+            'Datacenter 1 y 2':        { color: '#0ea5e9', icon: 'fa-server' },
+            'Cámaras de seguridad':    { color: '#f59e0b', icon: 'fa-camera' },
+            'Red y Comunicaciones':    { color: '#10b981', icon: 'fa-network-wired' },
+            'General':                 { color: '#94a3b8', icon: 'fa-gear' }
+        };
+        const defaultStyle = { color: '#64748b', icon: 'fa-wrench' };
 
+        // Agrupar tareas por categoría
+        const grupos = {};
         tareas.forEach(t => {
-            const tr = document.createElement('tr');
-            
-            // Parsear JSON (protegido por try-catch)
-            let prog = [];
-            let comp = [];
-            try { prog = JSON.parse(t.MesesProg || "[]"); } catch (e) {}
-            try { comp = JSON.parse(t.MesesComp || "[]"); } catch (e) {}
+            const cat = t.Categoria || 'General';
+            if (!grupos[cat]) grupos[cat] = [];
+            grupos[cat].push(t);
+        });
 
-            // Construir el HTML de los círculos (1 al 12)
-            const circulosHtml = mesesLabel.map((str, idx) => {
-                const mesNum = idx + 1;
-                const estaProg = prog.includes(mesNum);
-                const estaComp = comp.includes(mesNum);
+        const mesesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-                let clase = 'inactivo'; // gris por defecto
-                let clickEvent = ''; // si inactivo, no hace nada
+        Object.entries(grupos).forEach(([catNombre, listaTareas]) => {
+            const style = catStyles[catNombre] || defaultStyle;
 
-                if (estaProg) {
-                    if (estaComp) {
-                        clase = 'completado'; // Verde
-                    } else {
-                        clase = 'pendiente'; // Naranja/rojo
-                    }
-                    clickEvent = `onclick="MainApp.toggleMesTarea('${t.id}', ${mesNum})"`;
-                }
+            // Calcular progreso global de la categoría
+            let totalProg = 0, totalComp = 0;
+            listaTareas.forEach(t => {
+                let prog = []; let comp = [];
+                try { prog = JSON.parse(t.MesesProg || '[]'); } catch(e){}
+                try { comp = JSON.parse(t.MesesComp || '[]'); } catch(e){}
+                totalProg += prog.length;
+                totalComp += comp.filter(m => prog.includes(m)).length;
+            });
+            const pct = totalProg > 0 ? Math.round((totalComp / totalProg) * 100) : 0;
 
-                // Tooltip nombre mes
-                const mName = new Date(2000, idx, 1).toLocaleString('es-ES', { month: 'short' }).toUpperCase();
-                
-                return `<div class="mes-circle ${clase}" ${clickEvent} title="${mName}">${str}</div>`;
-            }).join('');
+            // Bloque de categoría
+            const block = document.createElement('div');
+            block.className = 'mant-categoria-block';
 
-            tr.innerHTML = `
-                <td><strong>${utils.escHtml(t.Nombre)}</strong></td>
-                <td><div class="meses-grid">${circulosHtml}</div></td>
-                <td>
-                    <button class="action-btn del" onclick="MainApp.eliminarTareaRecurrente('${t.id}')" title="Eliminar Programación">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
+            // Header de categoría
+            block.innerHTML = `
+                <div class="mant-categoria-header">
+                    <div class="mant-cat-icon" style="background:${style.color};">
+                        <i class="fa-solid ${style.icon}"></i>
+                    </div>
+                    <span class="mant-cat-title">${utils.escHtml(catNombre)}</span>
+                    <div class="mant-cat-progress-wrap">
+                        <div class="mant-progress-bar">
+                            <div class="mant-progress-fill" style="width:${pct}%;"></div>
+                        </div>
+                        <span class="mant-progress-pct">${pct}%</span>
+                    </div>
+                </div>
             `;
-            tbody.appendChild(tr);
+
+            // Filas de actividades
+            listaTareas.forEach(t => {
+                let prog = []; let comp = [];
+                try { prog = JSON.parse(t.MesesProg || '[]'); } catch(e){}
+                try { comp = JSON.parse(t.MesesComp || '[]'); } catch(e){}
+
+                const dotsHtml = mesesAbrev.map((label, idx) => {
+                    const mesNum = idx + 1;
+                    const estaProg = prog.includes(mesNum);
+                    const estaComp = comp.includes(mesNum);
+                    let clase = 'inactivo';
+                    let click = '';
+                    if (estaProg) {
+                        clase = estaComp ? 'completado' : 'pendiente';
+                        click = `onclick="MainApp.toggleMesTarea('${utils.escAttr(String(t.id))}', ${mesNum})"`;
+                    }
+                    return `<div class="mes-dot ${clase}" ${click} title="${label}">${label.substring(0,1)}</div>`;
+                }).join('');
+
+                const row = document.createElement('div');
+                row.className = 'mant-tarea-row';
+                row.innerHTML = `
+                    <div class="mant-tarea-nombre" title="${utils.escAttr(t.Nombre)}">${utils.escHtml(t.Nombre)}</div>
+                    <div class="mant-meses-row">${dotsHtml}</div>
+                    <div class="mant-tarea-actions">
+                        <button class="action-btn del" onclick="MainApp.eliminarTareaRecurrente('${utils.escAttr(String(t.id))}')" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                block.appendChild(row);
+            });
+
+            container.appendChild(block);
         });
     },
 
@@ -331,7 +432,11 @@ const ui = {
         container.innerHTML = '';
 
         if (!registros || registros.length === 0) {
-            container.innerHTML = `<p style="color: #94a3b8; text-align: center; width: 100%; grid-column: 1 / -1;">No hay evidencias registradas en la bitácora todavía.</p>`;
+            container.innerHTML = `
+                <div class="mant-empty" style="grid-column:1/-1;">
+                    <i class="fa-solid fa-images"></i>
+                    <p>No hay evidencias registradas todavía.</p>
+                </div>`;
             return;
         }
 
@@ -341,7 +446,7 @@ const ui = {
             card.innerHTML = `
                 <img src="${b.Imagen || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="bitacora-img" alt="Evidencia">
                 <div class="bitacora-content">
-                    <div class="bitacora-date">${utils.formatearFecha(b.Fecha)}</div>
+                    <div class="bitacora-date"><i class="fa-regular fa-calendar"></i>${utils.formatearFecha(b.Fecha)}</div>
                     <div class="bitacora-desc">${utils.escHtml(b.Descripcion)}</div>
                 </div>
             `;

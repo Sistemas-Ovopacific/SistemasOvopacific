@@ -776,3 +776,388 @@ tbody td {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ══════════════════════════════════════════════════════════
+   MÓDULO DE TAREAS — MANTENIMIENTO
+══════════════════════════════════════════════════════════ */
+
+/* Nav de tabs */
+.tareas-tabs-nav {
+    display: flex;
+    gap: 4px;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: var(--shadow-sm);
+}
+
+.tareas-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: 'Outfit', sans-serif;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.tareas-tab-btn:hover {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+.tareas-tab-btn.active {
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(91,94,244,0.3);
+}
+
+/* Formulario de mantenimiento */
+.mant-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.mant-form .form-group.full-width { grid-column: 1 / -1; }
+.mant-form .form-actions { grid-column: 1 / -1; }
+.mant-add-panel { border-left: 3px solid var(--accent); }
+
+/* Pills de meses (selector) */
+.meses-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.mes-pill-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border-subtle);
+    background: var(--bg-dark);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.mes-pill-label:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(91,94,244,0.06);
+}
+
+.mes-pill-label input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.mes-pill-label:has(input:checked) {
+    background: rgba(91,94,244,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Plan de mantenimiento — cabecera con etiquetas de meses */
+.meses-header-labels {
+    display: flex;
+    gap: 2px;
+}
+
+.meses-header-labels span {
+    width: 36px;
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Bloque de categoría */
+.mant-categoria-block {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.mant-categoria-block:last-child { border-bottom: none; }
+
+.mant-categoria-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 22px;
+    background: #f8faff;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.mant-cat-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.mant-cat-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.mant-cat-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 160px;
+}
+
+.mant-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-dark);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.mant-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), #818cf8);
+    transition: width 0.5s ease;
+}
+
+.mant-progress-pct {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 30px;
+    text-align: right;
+}
+
+/* Fila de actividad */
+.mant-tarea-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 22px;
+    border-bottom: 1px solid #f0f4ff;
+    transition: background 0.15s;
+}
+
+.mant-tarea-row:last-child { border-bottom: none; }
+.mant-tarea-row:hover { background: var(--bg-hover); }
+
+.mant-tarea-nombre {
+    flex: 0 0 260px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mant-meses-row {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+/* Círculos de mes */
+.mes-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: default;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+}
+
+.mes-dot.inactivo {
+    background: #f1f5f9;
+    color: #cbd5e1;
+}
+
+.mes-dot.pendiente {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fca5a5;
+    cursor: pointer;
+}
+
+.mes-dot.pendiente:hover {
+    background: #fee2e2;
+    transform: scale(1.12);
+    border-color: #ef4444;
+}
+
+.mes-dot.completado {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #86efac;
+    cursor: pointer;
+}
+
+.mes-dot.completado:hover {
+    background: #dcfce7;
+    transform: scale(1.12);
+}
+
+.mant-tarea-actions {
+    flex-shrink: 0;
+}
+
+/* Vista de tareas simples — tarjetas */
+.tarea-simple-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 22px;
+    border-bottom: 1px solid #f0f4ff;
+    transition: background 0.15s;
+}
+
+.tarea-simple-card:last-child { border-bottom: none; }
+.tarea-simple-card:hover { background: var(--bg-hover); }
+
+.tarea-urgencia-bar {
+    width: 4px;
+    height: 40px;
+    border-radius: 99px;
+    flex-shrink: 0;
+}
+
+.urgencia-hoy   { background: #10b981; }
+.urgencia-venc  { background: #ef4444; }
+.urgencia-prox  { background: var(--accent); }
+
+.tarea-simple-info { flex: 1; min-width: 0; }
+
+.tarea-simple-nombre {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tarea-simple-fecha {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tarea-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.badge-hoy   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-venc  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-prox  { background: rgba(91,94,244,0.08); color: var(--accent); border: 1px solid rgba(91,94,244,0.2); }
+
+/* Leyenda */
+.mant-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Bitácora */
+.bitacora-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.bitacora-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+}
+
+.bitacora-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.bitacora-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--bg-dark);
+}
+
+.bitacora-content { padding: 14px 16px; }
+
+.bitacora-date {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bitacora-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+/* Estado vacío del módulo */
+.mant-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.mant-empty i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.mant-empty p { font-size: 0.9rem; }
