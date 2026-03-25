@@ -166,3 +166,31 @@
 @keyframes bootScreenOut {
     to { opacity: 0; transform: scale(1.02); }
 }
+/* 
+   PORTAL DE INICIO (LANDING PORTAL)
+ */
+.landing-portal { position: fixed; inset: 0; z-index: 50; display: none; opacity: 0; transition: opacity 0.6s ease; flex-direction: column; align-items: center; justify-content: center; gap: 50px; background: #0f0c29; overflow: hidden; }
+#particles-js { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; background: linear-gradient(to right, #0f0c29, #302b63, #24243e); }
+.landing-title, .landing-cards { z-index: 2; position: relative; }
+.landing-title { color: #fff; font-size: 3rem; font-weight: 700; text-shadow: 0 0 20px rgba(130, 110, 255, 0.6); letter-spacing: 1px; text-align: center; }
+.landing-cards { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; padding: 0 20px; }
+.landing-card { background: rgba(18, 8, 52, 0.6); border: 1px solid rgba(130, 110, 255, 0.3); border-radius: 16px; padding: 50px 30px; width: 320px; text-align: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+.landing-card:hover { transform: translateY(-15px); border-color: rgba(130, 110, 255, 0.9); box-shadow: 0 15px 40px rgba(91, 94, 244, 0.5); background: rgba(28, 14, 75, 0.7); }
+.landing-card i { font-size: 4.5rem; color: #a5b4fc; margin-bottom: 25px; transition: transform 0.3s ease; }
+.landing-card:hover i { transform: scale(1.1); color: #c7d2fe; }
+.landing-card h3 { color: #fff; font-size: 1.6rem; margin-bottom: 15px; font-weight: 600; }
+.landing-card p { color: #94a3b8; font-size: 1rem; line-height: 1.5; }
+
+/* 
+   LOGIN SCREEN
+ */
+.login-screen { position: fixed; inset: 0; z-index: 60; display: none; opacity: 0; transition: opacity 0.6s ease; flex-direction: column; align-items: center; justify-content: center; gap: 30px; background: #0f0c29; overflow: hidden; }
+#particles-login { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; background: linear-gradient(to right, #0f0c29, #302b63, #24243e); }
+.login-box { z-index: 2; position: relative; background: rgba(18, 8, 52, 0.7); border: 1px solid rgba(130, 110, 255, 0.4); border-radius: 20px; padding: 50px 40px; width: 360px; text-align: center; backdrop-filter: blur(12px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); }
+.login-box i.fa-user-astronaut { font-size: 3.5rem; color: #a5b4fc; margin-bottom: 20px; }
+.login-box h2 { color: #fff; margin-bottom: 30px; font-weight: 600; letter-spacing: 1px; }
+.login-input { width: 100%; padding: 12px 15px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(130, 110, 255, 0.3); border-radius: 8px; color: #fff; transition: all 0.3s; }
+.login-input:focus { outline: none; border-color: #826eff; background: rgba(255, 255, 255, 0.1); }
+.login-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s; }
+.login-btn:hover { background: linear-gradient(135deg, #4338ca, #6d28d9); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4); }
+.login-error { color: #fca5a5; font-size: 0.9rem; margin-top: 15px; height: 20px; }
