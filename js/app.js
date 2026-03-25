@@ -46,6 +46,10 @@ const MainApp = {
             this.cambiarVista('inicio-tareas-view');
             document.getElementById('page-title').textContent = 'Tareas';
             document.getElementById('page-subtitle').textContent = 'Mis responsabilidades programadas';
+            // Re-renderizar con los datos ya cargados
+            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+            ui.renderizarInicioTareas(this.state.inicioTareas);
+            ui.renderizarBitacora(this.state.bitacora);
         }
     },
 
@@ -78,15 +82,22 @@ const MainApp = {
                 api.get('getProductos'),
                 api.get('getEntradas'),
                 api.get('getSalidas'),
-                api.get('getEntregas').catch(() => []), 
-                api.get('getTareas').catch(() => []), 
-                api.get('getTareasRecurrentes').catch(() => []), 
-                api.get('getBitacora').catch(() => []) 
+                api.get('getEntregas').catch(err => { console.error('[GET Entregas Failed]', err); return []; }), 
+                api.get('getTareas').catch(err => { console.error('[GET Tareas Failed]', err); return []; }), 
+                api.get('getTareasRecurrentes').catch(err => { console.error('[GET TareasRecurrentes Failed]', err); return []; }), 
+                api.get('getBitacora').catch(err => { console.error('[GET Bitacora Failed]', err); return []; }) 
             ]);
 
             if (p.error) throw new Error(p.error);
             if (e.error) throw new Error(e.error);
             if (s.error) throw new Error(s.error);
+
+            if (tR && tR.error) {
+                console.error('[Backend Error en TareasRecurrentes]:', tR.error);
+                utils.mostrarToast('Error cargando Tareas: ' + tR.error, 'danger');
+            }
+            if (tS && tS.error) console.error('[Backend Error en Tareas Simples]:', tS.error);
+            if (b && b.error) console.error('[Backend Error en Bitacora]:', b.error);
 
             this.state.productos = Array.isArray(p) ? p : [];
             this.state.entradas = Array.isArray(e) ? e : [];
@@ -113,7 +124,8 @@ const MainApp = {
         ui.actualizarMiniStats(productos);
         ui.llenarSelectsProductos(productos);
 
-        if (vistaActual === 'inicio-tareas-view') {
+        const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
+        if (enModuloTareas) {
             ui.renderizarInicioTareas(this.state.inicioTareas);
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
             ui.renderizarBitacora(this.state.bitacora);
@@ -538,7 +550,7 @@ const MainApp = {
             return;
         }
 
-        const nueva = { id: Date.now().toString(), Nombre: nombre, Categoria: categoria, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
+        const nueva = { id: 'TR-' + Date.now().toString(), Nombre: nombre, Categoria: categoria, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
         
         utils.mostrarLoader('Guardando configuración...');
         try {
@@ -557,25 +569,27 @@ const MainApp = {
     },
 
     async toggleMesTarea(idTarea, mes) {
-        // Encontrar la tarea en estado
+        const mesNum = Number(mes);
+        // Encontrar la tarea en estado local
         const tarea = this.state.tareasRecurrentes.find(t => String(t.id) === String(idTarea));
-        if (!tarea) return;
+        if (!tarea) { utils.mostrarToast('Tarea no encontrada localmente', 'danger'); return; }
 
         utils.mostrarLoader('Actualizando estado...');
         try {
-            const res = await api.post({ action: 'toggleMesTarea', id: idTarea, mes: mes });
+            const res = await api.post({ action: 'toggleMesTarea', id: idTarea, mes: mesNum });
+            if (res.error) throw new Error(res.error);
             utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
-            
-            // Actualizar localmente si fue exitoso (el backend hace el push o pull real, pero nosotros pre-calculamos)
+
+            // Actualizar localmente (sin esperar a recargar)
             let comp = [];
-            try { comp = JSON.parse(tarea.MesesComp || "[]"); } catch (e) { comp = []; }
-            if (comp.includes(mes)) {
-                comp = comp.filter(m => m !== mes);
+            try { comp = JSON.parse(tarea.MesesComp || '[]').map(Number); } catch (e) { comp = []; }
+            if (comp.includes(mesNum)) {
+                comp = comp.filter(m => m !== mesNum);
             } else {
-                comp.push(mes);
+                comp.push(mesNum);
             }
             tarea.MesesComp = JSON.stringify(comp);
-            
+
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
         } catch (err) {
             utils.mostrarToast('Error de sincronización: ' + err.message, 'danger');

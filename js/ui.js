@@ -316,7 +316,6 @@ const ui = {
         if (yearLabel) yearLabel.textContent = new Date().getFullYear();
 
         const container = this.els.getMantCategoriasContainer();
-        // Fallback a tbody si el container nuevo no existe
         if (!container) {
             const tbody = this.els.getTareasRecurrentesTbody();
             if (!tbody) return;
@@ -334,6 +333,37 @@ const ui = {
             return;
         }
 
+        // Normalizar datos que vienen de Google Sheets (campos faltantes, tipos distintos)
+        // Y filtrar filas vacías (cuando el usuario borra celdas en vez de eliminar la fila)
+        const tareasNorm = tareas
+            .filter(t => t.id || t.Nombre || t.ID || t.nombre)
+            .map(t => ({
+                ...t,
+                id:        String(t.id ?? t.ID ?? ''),
+                Nombre:    String(t.Nombre || t.nombre || 'Sin nombre'),
+                Categoria: String(t.Categoria || t.categoria || 'General'),
+                MesesProg: t.MesesProg || '[]',
+                MesesComp: t.MesesComp || '[]',
+            }));
+            
+        console.log('[MANT] Tareas a renderizar:', tareasNorm);
+
+        if (tareasNorm.length === 0) {
+            container.innerHTML = `
+                <div class="mant-empty">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <p>No hay actividades programadas. Usa el formulario de arriba para añadir.</p>
+                </div>`;
+            return;
+        }
+
+        // Poblar datalist de categorías sugeridas (solo valores únicos, ignorando 'General' por defecto si no se usa)
+        const datalist = document.getElementById('categorias-list');
+        if (datalist) {
+            const categoriasUnicas = [...new Set(tareasNorm.map(t => t.Categoria))].filter(c => c !== 'General');
+            datalist.innerHTML = categoriasUnicas.map(cat => `<option value="${utils.escAttr(cat)}">`).join('');
+        }
+
         // Colores e íconos por categoría
         const catStyles = {
             'Computadoras y Laptops':  { color: '#5b5ef4', icon: 'fa-laptop' },
@@ -344,10 +374,10 @@ const ui = {
         };
         const defaultStyle = { color: '#64748b', icon: 'fa-wrench' };
 
-        // Agrupar tareas por categoría
+        // Agrupar tareas por categoría (usando datos normalizados)
         const grupos = {};
-        tareas.forEach(t => {
-            const cat = t.Categoria || 'General';
+        tareasNorm.forEach(t => {
+            const cat = t.Categoria;
             if (!grupos[cat]) grupos[cat] = [];
             grupos[cat].push(t);
         });

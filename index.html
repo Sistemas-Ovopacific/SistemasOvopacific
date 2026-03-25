@@ -17,6 +17,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/boot.css">
+    <link rel="stylesheet" href="css/maintenance.css">
 </head>
 
 <body>
@@ -273,13 +274,10 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="tr-categoria">Categoría del Equipo</label>
-                                    <select id="tr-categoria">
-                                        <option value="Computadoras y Laptops">Computadoras y Laptops</option>
-                                        <option value="Datacenter 1 y 2">Datacenter 1 y 2</option>
-                                        <option value="Cámaras de seguridad">Cámaras de seguridad</option>
-                                        <option value="Red y Comunicaciones">Red y Comunicaciones</option>
-                                        <option value="General">General</option>
-                                    </select>
+                                    <input type="text" id="tr-categoria" list="categorias-list" placeholder="Ej: Computadoras, CCTV, General..." required>
+                                    <datalist id="categorias-list">
+                                        <!-- Opciones generadas por JS -->
+                                    </datalist>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Meses Programados</label>
