@@ -2,13 +2,23 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiSqVDNXIldLgyXl_1B_6OK-escibklzv7MYdvc_9GzLUF2zy-yUwcDwwAKeN1-FgzPw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwbW2Pz1WP_VoDmIvfz4cC-Qxc9x13I9zXV6TOSBiLoTNMWG7zRw99CsWuBpmjiUar5IA/exec';
 
 const api = {
     async get(action) {
         const res = await fetch(`${GAS_URL}?action=${action}&t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
+    },
+
+    async login(usuario, password) {
+        const u = encodeURIComponent(usuario);
+        const p = encodeURIComponent(password);
+        const res = await fetch(`${GAS_URL}?action=login&usuario=${u}&password=${p}&t=${Date.now()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        return data;
     },
 
     async post(payload) {

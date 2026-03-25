@@ -239,14 +239,20 @@ const ui = {
         const hoy = new Date();
         hoy.setHours(0,0,0,0);
 
-        if (!tareas || tareas.length === 0) {
+        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const misTareas = tareas.filter(t => {
+            const tUsr = String(t.Usuario || Object.values(t)[5] || '').toLowerCase().trim();
+            return tUsr === '' || tUsr === usr;
+        });
+
+        if (!misTareas || misTareas.length === 0) {
             const emptyHtml = `<div class="mant-empty"><i class="fa-solid fa-list-check"></i><p>No hay tareas programadas. Usa el formulario de arriba para añadir.</p></div>`;
             if (cardsEl) cardsEl.innerHTML = emptyHtml;
             if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No hay tareas programadas</td></tr>`;
             return;
         }
 
-        const sorted = [...tareas].sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
+        const sorted = [...misTareas].sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
 
         // Renderizar en el nuevo diseño de tarjetas (si existe el contenedor)
         if (cardsEl) {
@@ -333,18 +339,31 @@ const ui = {
             return;
         }
 
-        // Normalizar datos que vienen de Google Sheets (campos faltantes, tipos distintos)
-        // Y filtrar filas vacías (cuando el usuario borra celdas en vez de eliminar la fila)
+        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+
+        // Normalizar datos tolerando cambios de nombres en las columnas de Google Sheets
         const tareasNorm = tareas
-            .filter(t => t.id || t.Nombre || t.ID || t.nombre)
-            .map(t => ({
-                ...t,
-                id:        String(t.id ?? t.ID ?? ''),
-                Nombre:    String(t.Nombre || t.nombre || 'Sin nombre'),
-                Categoria: String(t.Categoria || t.categoria || 'General'),
-                MesesProg: t.MesesProg || '[]',
-                MesesComp: t.MesesComp || '[]',
-            }));
+            .filter(t => {
+                // Para filtrar filas fantasmas, requerimos que la fila tenga al menos 2 celdas con datos
+                const celdasValidas = Object.values(t).filter(v => typeof v !== 'undefined' && String(v).trim() !== '');
+                return celdasValidas.length >= 2;
+            })
+            .map(t => {
+                const vals = Object.values(t); // Fallback posicional en caso de que cambien las cabeceras
+                return {
+                    ...t,
+                    id:        String(t.id ?? t.ID ?? vals[0] ?? ''),
+                    Nombre:    String(t.Nombre || t.nombre || t.Actividad || vals[1] || 'Sin nombre'),
+                    Categoria: String(t.Categoria || t.categoria || t.Tipo || vals[2] || 'General'),
+                    MesesProg: t.MesesProg || t.mesesprog || vals[3] || '[]',
+                    MesesComp: t.MesesComp || t.mesescomp || vals[4] || '[]',
+                    Usuario:   String(t.Usuario || vals[5] || '')
+                };
+            })
+            .filter(t => {
+                const tUsr = t.Usuario.toLowerCase().trim();
+                return tUsr === '' || tUsr === usr; // Mostrar tareas propias o heredadas (sin usuario)
+            });
             
         console.log('[MANT] Tareas a renderizar:', tareasNorm);
 
@@ -461,7 +480,13 @@ const ui = {
         if (!container) return;
         container.innerHTML = '';
 
-        if (!registros || registros.length === 0) {
+        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const misRegistros = registros.filter(b => {
+            const bUsr = String(b.Usuario || Object.values(b)[4] || '').toLowerCase().trim();
+            return bUsr === '' || bUsr === usr;
+        });
+
+        if (!misRegistros || misRegistros.length === 0) {
             container.innerHTML = `
                 <div class="mant-empty" style="grid-column:1/-1;">
                     <i class="fa-solid fa-images"></i>
@@ -470,7 +495,7 @@ const ui = {
             return;
         }
 
-        registros.forEach(b => {
+        misRegistros.forEach(b => {
             const card = document.createElement('div');
             card.className = 'bitacora-card';
             card.innerHTML = `

@@ -60,41 +60,218 @@
     ══════════════════════════════════════════ -->
     <style>
         .landing-portal {
-            position: fixed; inset: 0; z-index: 50;
-            display: none; opacity: 0; transition: opacity 0.6s ease;
-            flex-direction: column; align-items: center; justify-content: center; gap: 50px;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            background: #0f0c29;
+            /* Fallback si particles falla */
+            overflow: hidden;
         }
-        .landing-title {
-            color: #fff; font-size: 3rem; font-weight: 700;
-            text-shadow: 0 0 20px rgba(130, 110, 255, 0.6);
-            letter-spacing: 1px; text-align: center;
+
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
         }
+
+        .landing-title,
         .landing-cards {
-            display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; padding: 0 20px;
+            z-index: 2;
+            /* Para que queden encima de las partículas */
+            position: relative;
         }
+
+        .landing-title {
+            color: #fff;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(130, 110, 255, 0.6);
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .landing-cards {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
         .landing-card {
             background: rgba(18, 8, 52, 0.6);
             border: 1px solid rgba(130, 110, 255, 0.3);
-            border-radius: 16px; padding: 50px 30px;
-            width: 320px; text-align: center; cursor: pointer;
+            border-radius: 16px;
+            padding: 50px 30px;
+            width: 320px;
+            text-align: center;
+            cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
+
         .landing-card:hover {
             transform: translateY(-15px);
             border-color: rgba(130, 110, 255, 0.9);
             box-shadow: 0 15px 40px rgba(91, 94, 244, 0.5);
             background: rgba(28, 14, 75, 0.7);
         }
+
         .landing-card i {
-            font-size: 4.5rem; color: #a5b4fc; margin-bottom: 25px;
+            font-size: 4.5rem;
+            color: #a5b4fc;
+            margin-bottom: 25px;
             transition: transform 0.3s ease;
         }
-        .landing-card:hover i { transform: scale(1.1); color: #c7d2fe; }
-        .landing-card h3 { color: #fff; font-size: 1.6rem; margin-bottom: 15px; font-weight: 600; }
-        .landing-card p { color: #94a3b8; font-size: 1rem; line-height: 1.5; }
+
+        .landing-card:hover i {
+            transform: scale(1.1);
+            color: #c7d2fe;
+        }
+
+        .landing-card h3 {
+            color: #fff;
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .landing-card p {
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            background: #0f0c29;
+            overflow: hidden;
+        }
+
+        #particles-login {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
+        }
+
+        .login-box {
+            z-index: 2;
+            position: relative;
+            background: rgba(18, 8, 52, 0.7);
+            border: 1px solid rgba(130, 110, 255, 0.4);
+            border-radius: 20px;
+            padding: 50px 40px;
+            width: 360px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .login-box i.fa-user-astronaut {
+            font-size: 3.5rem;
+            color: #a5b4fc;
+            margin-bottom: 20px;
+        }
+
+        .login-box h2 {
+            color: #fff;
+            margin-bottom: 30px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(130, 110, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #826eff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #4338ca, #6d28d9);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+        }
+
+        .login-error {
+            color: #fca5a5;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            height: 20px;
+        }
     </style>
+
+    <!-- =========================================================
+         LOGIN SCREEN
+    ========================================================= -->
+    <div id="login-screen" class="login-screen">
+        <div id="particles-login"></div>
+        <div class="login-box">
+            <i class="fa-solid fa-user-astronaut"></i>
+            <h2>Acceso al Sistema</h2>
+            <form id="login-form">
+                <input type="text" id="login-user" class="login-input" placeholder="Usuario" required
+                    autocomplete="off">
+                <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" required>
+                <button type="submit" class="login-btn" id="login-submit-btn">Entrar</button>
+            </form>
+            <div id="login-error-msg" class="login-error"></div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         PORTAL DE INICIO (LANDING PAGE)
+    ========================================================= -->
     <div id="landing-portal" class="landing-portal">
+        <div id="particles-js"></div>
         <h1 class="landing-title">Seleccione un Módulo</h1>
         <div class="landing-cards">
             <div class="landing-card" onclick="window.startApp('inventario')">
@@ -108,6 +285,10 @@
                 <p>Programación personal, fechas límite y control de actividades.</p>
             </div>
         </div>
+        
+        <button onclick="MainApp.logout()" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'" style="margin-top: 50px; padding: 12px 25px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; border-radius: 10px; cursor: pointer; transition: all 0.3s; z-index: 10; font-size: 1.1rem; letter-spacing: 0.5px; backdrop-filter: blur(5px);">
+            <i class="fa-solid fa-right-from-bracket" style="margin-right: 8px;"></i> Cerrar Sesión
+        </button>
     </div>
 
     <!-- ══════════════════════════════════════════
@@ -122,11 +303,22 @@
             <div class="sidebar-logo">
                 <div class="logo-wrap">
                     <div class="logo-icon">
-                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <i id="sidebar-logo-icon" class="fa-solid fa-boxes-stacked"></i>
                     </div>
                     <div>
-                        <div class="logo-text">Inventario<span> Sistemas</span></div>
+                        <div class="logo-text" id="sidebar-logo-text">Inventario<span> Sistemas</span></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="sidebar-user" id="sidebar-user" style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: none; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <div class="user-avatar" style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: #fff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);">
+                    <span id="user-initial">U</span>
+                </div>
+                <div class="user-info" style="display: flex; flex-direction: column;">
+                    <span id="user-name-display" style="font-weight: 600; font-size: 0.95rem; color: #fff; letter-spacing: 0.3px;">Usuario</span>
+                    <span style="font-size: 0.75rem; color: #a5b4fc; margin-top: 2px;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px; color: #10b981;"></i>En línea</span>
                 </div>
             </div>
 
@@ -181,11 +373,17 @@
 
             <!-- Footer Sidebar -->
             <div class="sidebar-footer" style="flex-direction: column; gap: 15px;">
+                <button class="btn btn-primary"
+                    style="width: 100%; background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5;"
+                    onclick="MainApp.logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
                 <div id="connection-status">
                     <span class="dot dot-warning"></span>
                     <span>Conectando...</span>
                 </div>
-                <button class="btn btn-secondary btn-sm" id="btn-volver-portal" onclick="window.location.reload()" style="width: 100%;">
+                <button class="btn btn-secondary btn-sm" id="btn-volver-portal" onclick="window.location.reload()"
+                    style="width: 100%;">
                     <i class="fa-solid fa-arrow-left"></i> Cambiar Módulo
                 </button>
             </div>
@@ -245,7 +443,8 @@
 
                 <!-- TABS DE NAVEGACIÓN -->
                 <div class="tareas-tabs-nav">
-                    <button class="tareas-tab-btn active" data-tab="recurrentes" onclick="MainApp.switchTareasTab('recurrentes')">
+                    <button class="tareas-tab-btn active" data-tab="recurrentes"
+                        onclick="MainApp.switchTareasTab('recurrentes')">
                         <i class="fa-solid fa-calendar-days"></i> Tareas Mensuales
                     </button>
                     <button class="tareas-tab-btn" data-tab="simples" onclick="MainApp.switchTareasTab('simples')">
@@ -270,11 +469,13 @@
                             <form id="form-tarea-recurrente" class="mant-form">
                                 <div class="form-group">
                                     <label for="tr-nombre">Nombre de la Actividad</label>
-                                    <input type="text" id="tr-nombre" placeholder="Ej: Limpieza de equipos, Revisión de servidores..." required>
+                                    <input type="text" id="tr-nombre"
+                                        placeholder="Ej: Limpieza de equipos, Revisión de servidores..." required>
                                 </div>
                                 <div class="form-group">
                                     <label for="tr-categoria">Categoría del Equipo</label>
-                                    <input type="text" id="tr-categoria" list="categorias-list" placeholder="Ej: Computadoras, CCTV, General..." required>
+                                    <input type="text" id="tr-categoria" list="categorias-list"
+                                        placeholder="Ej: Computadoras, CCTV, General..." required>
                                     <datalist id="categorias-list">
                                         <!-- Opciones generadas por JS -->
                                     </datalist>
@@ -295,7 +496,8 @@
                     <!-- Vista de categorías con tarjetas -->
                     <div class="panel">
                         <div class="panel-header">
-                            <h2><i class="fa-solid fa-calendar-check"></i> Plan de Mantenimiento — <span id="mant-year-label">2026</span></h2>
+                            <h2><i class="fa-solid fa-calendar-check"></i> Plan de Mantenimiento — <span
+                                    id="mant-year-label">2026</span></h2>
                             <div class="meses-header-labels" aria-hidden="true">
                                 <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span>
                                 <span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
@@ -311,7 +513,7 @@
                 </div><!-- /tab-tareas-recurrentes -->
 
                 <!-- ──────────────────────────────────────────
-                     TAB 2: CONTROL MENSUAL / TAREAS SIMPLES
+                     TAB 2: CONTROL MENSUAL / TAREAS SIMPLES    
                 ────────────────────────────────────────── -->
                 <div id="tab-tareas-simples" style="display:none;">
 
@@ -324,7 +526,8 @@
                             <form id="form-inicio-tarea" class="mant-form">
                                 <div class="form-group">
                                     <label for="inicio-tarea-nombre">Descripción de la Actividad</label>
-                                    <input type="text" id="inicio-tarea-nombre" placeholder="¿Qué necesitas hacer?" required>
+                                    <input type="text" id="inicio-tarea-nombre" placeholder="¿Qué necesitas hacer?"
+                                        required>
                                 </div>
                                 <div class="form-group">
                                     <label for="inicio-tarea-fecha">Fecha Programada</label>
@@ -344,9 +547,12 @@
                         <div class="panel-header" style="justify-content: space-between;">
                             <h2><i class="fa-solid fa-list-check"></i> Tareas Programadas</h2>
                             <div style="display:flex; gap:10px; align-items:center;">
-                                <span class="mant-legend-dot" style="background:#10b981;"></span><span class="legend-text">Hoy</span>
-                                <span class="mant-legend-dot" style="background:#ef4444;"></span><span class="legend-text">Vencida</span>
-                                <span class="mant-legend-dot" style="background:#5b5ef4;"></span><span class="legend-text">Próxima</span>
+                                <span class="mant-legend-dot" style="background:#10b981;"></span><span
+                                    class="legend-text">Hoy</span>
+                                <span class="mant-legend-dot" style="background:#ef4444;"></span><span
+                                    class="legend-text">Vencida</span>
+                                <span class="mant-legend-dot" style="background:#5b5ef4;"></span><span
+                                    class="legend-text">Próxima</span>
                             </div>
                         </div>
                         <div class="panel-body" style="padding: 0;">
@@ -576,7 +782,8 @@
                             </div>
                             <div class="form-group full-width">
                                 <label for="entrega-desc">Descripción</label>
-                                <textarea id="entrega-desc" rows="2" placeholder="Detalles de la entrega..." required></textarea>
+                                <textarea id="entrega-desc" rows="2" placeholder="Detalles de la entrega..."
+                                    required></textarea>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn btn-primary">
@@ -588,11 +795,14 @@
                 </div>
 
                 <div class="panel">
-                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div class="panel-header"
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <h2><i class="fa-solid fa-list-check"></i> Seguimiento de Entregas</h2>
                         <div class="filters" style="display: flex; gap: 10px;">
-                            <input type="text" id="filter-entrega-nombre" placeholder="Filtrar por nombre..." style="padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; outline: none;">
-                            <input type="date" id="filter-entrega-fecha" style="padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; outline: none;">
+                            <input type="text" id="filter-entrega-nombre" placeholder="Filtrar por nombre..."
+                                style="padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; outline: none;">
+                            <input type="date" id="filter-entrega-fecha"
+                                style="padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; outline: none;">
                         </div>
                     </div>
                     <div class="panel-body">
@@ -713,6 +923,53 @@
     <script src="js/ui.js"></script>
     <script src="js/boot.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- Partículas animadas para el portal -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Configuración reutilizable de partículas
+        const particlesConfig = {
+            "particles": {
+                "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#826eff" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.6, "random": false },
+                "size": { "value": 2.5, "random": true },
+                "line_linked": {
+                    "enable": true, "distance": 150, "color": "#a5b4fc", "opacity": 0.5, "width": 1.5
+                },
+                "move": {
+                    "enable": true, "speed": 2.5, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" },
+                    "onclick": { "enable": true, "mode": "push" }, "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 160, "line_linked": { "opacity": 1 } },
+                    "push": { "particles_nb": 4 }
+                }
+            },
+            "retina_detect": true
+        };
+
+        window.initPortalParticles = function () {
+            if (document.getElementById('particles-js') && !window.particlesInitDone) {
+                window.particlesInitDone = true;
+                particlesJS('particles-js', particlesConfig);
+            }
+        };
+
+        window.initLoginParticles = function () {
+            if (document.getElementById('particles-login') && !window.particlesLoginDone) {
+                window.particlesLoginDone = true;
+                particlesJS('particles-login', particlesConfig);
+            }
+        };
+    </script>
 </body>
 
 </html>

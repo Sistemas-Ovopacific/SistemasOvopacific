@@ -20,7 +20,84 @@ const MainApp = {
     init() {
         this.inicializarNavegacion();
         this.inicializarEventos();
+        this.inicializarLogin();
+        
+        // Mostrar perfil en sidebar
+        const currentUser = localStorage.getItem('inv_currentUser');
+        const currentName = localStorage.getItem('inv_currentName') || currentUser;
+        
+        if (currentUser) {
+            const userBox = document.getElementById('sidebar-user');
+            if (userBox) {
+                userBox.style.display = 'flex';
+                document.getElementById('user-name-display').textContent = currentName;
+                document.getElementById('user-initial').textContent = currentName.charAt(0).toUpperCase();
+            }
+        }
+        
         this.cargarTodosLosDatos();
+    },
+
+    logout() {
+        if (confirm('¿Cerrar sesión?')) {
+            localStorage.removeItem('inv_currentUser');
+            localStorage.removeItem('inv_currentName');
+            location.reload();
+        }
+    },
+
+    // ── AUTENTICACIÓN ──
+    inicializarLogin() {
+        const form = document.getElementById('login-form');
+        const btn = document.getElementById('login-submit-btn');
+        const errorMsg = document.getElementById('login-error-msg');
+        
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            
+            if (!user || !pass) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+            errorMsg.textContent = '';
+
+            try {
+                const res = await api.login(user, pass);
+                if (res.success) {
+                    // Guardar sesión
+                    localStorage.setItem('inv_currentUser', res.usuario);
+                    if (res.nombre) localStorage.setItem('inv_currentName', res.nombre);
+                    
+                    // Ocultar login y mostrar portal
+                    const loginScreen = document.getElementById('login-screen');
+                    loginScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loginScreen.style.display = 'none';
+                        const landing = document.getElementById('landing-portal');
+                        if (landing) {
+                            landing.style.display = 'flex';
+                            setTimeout(() => {
+                                landing.style.opacity = '1';
+                                if (window.initPortalParticles) window.initPortalParticles();
+                            }, 50);
+                        }
+                    }, 500);
+
+                    // Recargar datos para aplicar filtros de usuario
+                    this.cargarTodosLosDatos();
+                }
+            } catch (err) {
+                console.error('[LOGIN] Error:', err);
+                errorMsg.textContent = err.message || 'Error de conexión';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Entrar';
+            }
+        });
     },
 
     // ── NAVEGACIÓN ──
@@ -32,20 +109,40 @@ const MainApp = {
 
     setMode(mode) {
         this.state.moduloActual = mode;
+        const logoText = document.getElementById('sidebar-logo-text');
+        const logoIcon = document.getElementById('sidebar-logo-icon');
+
+        // Garantizar que el perfil de usuario siga visible siempre que haya sesión
+        const currentUser = localStorage.getItem('inv_currentUser');
+        if (currentUser) {
+            const userBox = document.getElementById('sidebar-user');
+            if (userBox) userBox.style.display = 'flex';
+        }
+
         if (mode === 'inventario') {
             document.getElementById('nav-menu-inventario').style.display = 'block';
             document.getElementById('nav-menu-tareas').style.display = 'none';
             document.querySelector('.mini-stats').style.display = 'flex';
             this.cambiarVista('productos');
+            
             document.getElementById('page-title').textContent = 'Inventario';
             document.getElementById('page-subtitle').textContent = 'Gestión del almacén';
+            
+            if (logoText) logoText.innerHTML = `Inventario<span> Sistemas</span>`;
+            if (logoIcon) logoIcon.className = `fa-solid fa-boxes-stacked`;
+            
         } else if (mode === 'tareas') {
             document.getElementById('nav-menu-inventario').style.display = 'none';
             document.getElementById('nav-menu-tareas').style.display = 'block';
             document.querySelector('.mini-stats').style.display = 'none';
             this.cambiarVista('inicio-tareas-view');
-            document.getElementById('page-title').textContent = 'Tareas';
-            document.getElementById('page-subtitle').textContent = 'Mis responsabilidades programadas';
+            
+            document.getElementById('page-title').textContent = 'Seguimiento de Tareas';
+            document.getElementById('page-subtitle').textContent = 'Mis responsabilidades y actividades programadas';
+            
+            if (logoText) logoText.innerHTML = `Gestión de<span> Tareas</span>`;
+            if (logoIcon) logoIcon.className = `fa-solid fa-list-check`;
+            
             // Re-renderizar con los datos ya cargados
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
             ui.renderizarInicioTareas(this.state.inicioTareas);
@@ -484,7 +581,8 @@ const MainApp = {
         const fecha = document.getElementById('inicio-tarea-fecha').value;
         if (!nombre || !fecha) return;
 
-        const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha };
+        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+        const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha, Usuario: usr };
         
         utils.mostrarLoader('Registrando tarea...');
         try {
@@ -550,7 +648,16 @@ const MainApp = {
             return;
         }
 
-        const nueva = { id: 'TR-' + Date.now().toString(), Nombre: nombre, Categoria: categoria, MesesProg: JSON.stringify(mesesProg), MesesComp: "[]", Año: new Date().getFullYear().toString() };
+        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+        const nueva = { 
+            id: 'TR-' + Date.now().toString(), 
+            Nombre: nombre, 
+            Categoria: categoria, 
+            MesesProg: JSON.stringify(mesesProg), 
+            MesesComp: "[]", 
+            Año: new Date().getFullYear().toString(),
+            Usuario: usr 
+        };
         
         utils.mostrarLoader('Guardando configuración...');
         try {
@@ -626,7 +733,14 @@ const MainApp = {
         try {
             // Leer y comprimir la imagen localmente
             const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
-            const payload = { id: Date.now().toString(), Fecha: fecha, Descripcion: desc, Imagen: base64Image };
+            const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+            const payload = { 
+                id: Date.now().toString(), 
+                Fecha: fecha, 
+                Descripcion: desc, 
+                Imagen: base64Image,
+                Usuario: usr 
+            };
             
             utils.mostrarLoader('Subiendo evidencia...');
             const res = await api.post({ action: 'registrarBitacora', bitacora: payload });

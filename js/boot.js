@@ -174,13 +174,32 @@
             bootScreen.style.opacity = '0';
             setTimeout(() => {
                 bootScreen.style.display = 'none';
-                const landing = document.getElementById('landing-portal');
-                if (landing) {
-                    landing.style.display = 'flex';
-                    setTimeout(() => landing.style.opacity = '1', 50);
-                } else if (appCont) {
-                    appCont.style.display = 'flex';
-                    setTimeout(() => appCont.style.opacity = '1', 50);
+
+                // Check if user is logged in
+                let currentUser = localStorage.getItem('inv_currentUser');
+                if (currentUser === 'undefined' || currentUser === 'null') currentUser = null;
+                
+                if (!currentUser) {
+                    const loginScreen = document.getElementById('login-screen');
+                    if (loginScreen) {
+                        loginScreen.style.display = 'flex';
+                        setTimeout(() => {
+                            loginScreen.style.opacity = '1';
+                            if (window.initLoginParticles) window.initLoginParticles();
+                        }, 50);
+                    }
+                } else {
+                    const landing = document.getElementById('landing-portal');
+                    if (landing) {
+                        landing.style.display = 'flex';
+                        setTimeout(() => {
+                            landing.style.opacity = '1';
+                            if (window.initPortalParticles) window.initPortalParticles();
+                        }, 50);
+                    } else if (appCont) {
+                        appCont.style.display = 'flex';
+                        setTimeout(() => appCont.style.opacity = '1', 50);
+                    }
                 }
                 startParticles();
             }, 600);
