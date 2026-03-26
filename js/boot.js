@@ -176,7 +176,7 @@
                 bootScreen.style.display = 'none';
 
                 // Check if user is logged in
-                let currentUser = localStorage.getItem('inv_currentUser');
+                let currentUser = sessionStorage.getItem('inv_currentUser');
                 if (currentUser === 'undefined' || currentUser === 'null') currentUser = null;
                 
                 if (!currentUser) {

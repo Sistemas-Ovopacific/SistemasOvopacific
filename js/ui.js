@@ -239,7 +239,7 @@ const ui = {
         const hoy = new Date();
         hoy.setHours(0,0,0,0);
 
-        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
         const misTareas = tareas.filter(t => {
             const tUsr = String(t.Usuario || Object.values(t)[5] || '').toLowerCase().trim();
             return tUsr === '' || tUsr === usr;
@@ -339,7 +339,7 @@ const ui = {
             return;
         }
 
-        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
 
         // Normalizar datos tolerando cambios de nombres en las columnas de Google Sheets
         const tareasNorm = tareas
@@ -480,7 +480,7 @@ const ui = {
         if (!container) return;
         container.innerHTML = '';
 
-        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
         const misRegistros = registros.filter(b => {
             const bUsr = String(b.Usuario || Object.values(b)[4] || '').toLowerCase().trim();
             return bUsr === '' || bUsr === usr;
