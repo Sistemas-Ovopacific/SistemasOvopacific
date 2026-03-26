@@ -23,8 +23,8 @@ const MainApp = {
         this.inicializarLogin();
         
         // Mostrar perfil en sidebar
-        const currentUser = sessionStorage.getItem('inv_currentUser');
-        const currentName = sessionStorage.getItem('inv_currentName') || currentUser;
+        const currentUser = localStorage.getItem('inv_currentUser');
+        const currentName = localStorage.getItem('inv_currentName') || currentUser;
         
         if (currentUser) {
             const userBox = document.getElementById('sidebar-user');
@@ -40,8 +40,8 @@ const MainApp = {
 
     logout() {
         if (confirm('¿Cerrar sesión?')) {
-            sessionStorage.removeItem('inv_currentUser');
-            sessionStorage.removeItem('inv_currentName');
+            localStorage.removeItem('inv_currentUser');
+            localStorage.removeItem('inv_currentName');
             location.reload();
         }
     },
@@ -69,8 +69,19 @@ const MainApp = {
                 const res = await api.login(user, pass);
                 if (res.success) {
                     // Guardar sesión
-                    sessionStorage.setItem('inv_currentUser', res.usuario);
-                    if (res.nombre) sessionStorage.setItem('inv_currentName', res.nombre);
+                    localStorage.setItem('inv_currentUser', res.usuario);
+                    if (res.nombre) {
+                        localStorage.setItem('inv_currentName', res.nombre);
+                    } else {
+                        localStorage.removeItem('inv_currentName');
+                    }
+                    
+                    const currentName = res.nombre || res.usuario;
+                    const userBox = document.getElementById('sidebar-user');
+                    if (userBox) {
+                        document.getElementById('user-name-display').textContent = currentName;
+                        document.getElementById('user-initial').textContent = currentName.charAt(0).toUpperCase();
+                    }
                     
                     // Ocultar login y mostrar portal
                     const loginScreen = document.getElementById('login-screen');
@@ -113,7 +124,7 @@ const MainApp = {
         const logoIcon = document.getElementById('sidebar-logo-icon');
 
         // Garantizar que el perfil de usuario siga visible siempre que haya sesión
-        const currentUser = sessionStorage.getItem('inv_currentUser');
+        const currentUser = localStorage.getItem('inv_currentUser');
         if (currentUser) {
             const userBox = document.getElementById('sidebar-user');
             if (userBox) userBox.style.display = 'flex';
@@ -581,7 +592,7 @@ const MainApp = {
         const fecha = document.getElementById('inicio-tarea-fecha').value;
         if (!nombre || !fecha) return;
 
-        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
         const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha, Usuario: usr };
         
         utils.mostrarLoader('Registrando tarea...');
@@ -648,7 +659,7 @@ const MainApp = {
             return;
         }
 
-        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
         const nueva = { 
             id: 'TR-' + Date.now().toString(), 
             Nombre: nombre, 
@@ -721,6 +732,26 @@ const MainApp = {
     },
 
     // ── ACCIONES BITÁCORA ──
+    abrirImagen(src) {
+        if (!src || src.includes('data:image/gif')) return;
+        const modal = document.getElementById('modal-visor');
+        const img = document.getElementById('visor-imagen-src');
+        if (modal && img) {
+            img.src = src;
+            modal.classList.add('active');
+        }
+    },
+
+    cerrarImagen() {
+        const modal = document.getElementById('modal-visor');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                const img = document.getElementById('visor-imagen-src');
+                if (img) img.src = '';
+            }, 300);
+        }
+    },
     async registrarBitacora() {
         const fecha = document.getElementById('bitacora-fecha').value;
         const desc = document.getElementById('bitacora-desc').value.trim();
@@ -733,7 +764,7 @@ const MainApp = {
         try {
             // Leer y comprimir la imagen localmente
             const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
-            const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+            const usr = localStorage.getItem('inv_currentUser') || 'Admin';
             const payload = { 
                 id: Date.now().toString(), 
                 Fecha: fecha, 

@@ -91,8 +91,10 @@
                 <p>Programación personal, fechas límite y control de actividades.</p>
             </div>
         </div>
-        
-        <button onclick="MainApp.logout()" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'" style="margin-top: 50px; padding: 12px 25px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; border-radius: 10px; cursor: pointer; transition: all 0.3s; z-index: 10; font-size: 1.1rem; letter-spacing: 0.5px; backdrop-filter: blur(5px);">
+
+        <button onclick="MainApp.logout()" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'"
+            onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'"
+            style="margin-top: 50px; padding: 12px 25px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; border-radius: 10px; cursor: pointer; transition: all 0.3s; z-index: 10; font-size: 1.1rem; letter-spacing: 0.5px; backdrop-filter: blur(5px);">
             <i class="fa-solid fa-right-from-bracket" style="margin-right: 8px;"></i> Cerrar Sesión
         </button>
     </div>
@@ -118,13 +120,18 @@
             </div>
 
             <!-- User Profile -->
-            <div class="sidebar-user" id="sidebar-user" style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: none; align-items: center; gap: 12px; margin-bottom: 10px;">
-                <div class="user-avatar" style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: #fff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);">
+            <div class="sidebar-user" id="sidebar-user"
+                style="padding: 15px 20px; border-bottom: 1px solid rgba(0,0,0,0.05); display: none; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <div class="user-avatar"
+                    style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: #fff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">
                     <span id="user-initial">U</span>
                 </div>
                 <div class="user-info" style="display: flex; flex-direction: column;">
-                    <span id="user-name-display" style="font-weight: 600; font-size: 0.95rem; color: #fff; letter-spacing: 0.3px;">Usuario</span>
-                    <span style="font-size: 0.75rem; color: #a5b4fc; margin-top: 2px;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px; color: #10b981;"></i>En línea</span>
+                    <span id="user-name-display"
+                        style="font-weight: 700; font-size: 1rem; color: var(--text-color, #1e293b); letter-spacing: 0.3px;">Usuario</span>
+                    <span style="font-size: 0.75rem; color: #64748b; margin-top: 2px; font-weight: 500;"><i
+                            class="fa-solid fa-circle"
+                            style="font-size: 0.5rem; margin-right: 4px; color: #10b981;"></i>En línea</span>
                 </div>
             </div>
 
@@ -711,6 +718,14 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Visor de Imágenes -->
+    <div class="modal-visor-img" id="modal-visor" onclick="MainApp.cerrarImagen()">
+        <div class="modal-visor-content" onclick="event.stopPropagation()">
+            <button class="btn-close-visor" onclick="MainApp.cerrarImagen()"><i class="fa-solid fa-xmark"></i></button>
+            <img id="visor-imagen-src" src="" alt="Evidencia Ampliada">
         </div>
     </div>
 

@@ -411,3 +411,72 @@
 }
 
 .mant-empty p { font-size: 0.9rem; }
+
+/* ══════════════════════════════════════════════════════════
+   MODAL VISOR DE IMÁGENES (BITÁCORA)
+══════════════════════════════════════════════════════════ */
+.modal-visor-img {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.modal-visor-img.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-visor-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90vh;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-visor-img.active .modal-visor-content {
+    transform: scale(1);
+}
+
+.modal-visor-content img {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 3px solid rgba(255,255,255,0.1);
+    object-fit: contain;
+}
+
+.btn-close-visor {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.btn-close-visor:hover {
+    color: #ef4444;
+}
+
+.bitacora-img {
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.bitacora-img:hover {
+    filter: brightness(0.85);
+}

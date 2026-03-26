@@ -239,10 +239,11 @@ const ui = {
         const hoy = new Date();
         hoy.setHours(0,0,0,0);
 
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const isAdmin = usr === 'admin' || usr === 'administrador';
         const misTareas = tareas.filter(t => {
             const tUsr = String(t.Usuario || Object.values(t)[5] || '').toLowerCase().trim();
-            return tUsr === '' || tUsr === usr;
+            return isAdmin || tUsr === '' || tUsr === usr;
         });
 
         if (!misTareas || misTareas.length === 0) {
@@ -362,7 +363,8 @@ const ui = {
             })
             .filter(t => {
                 const tUsr = t.Usuario.toLowerCase().trim();
-                return tUsr === '' || tUsr === usr; // Mostrar tareas propias o heredadas (sin usuario)
+                const isAdmin = usr === 'admin' || usr === 'administrador';
+                return isAdmin || tUsr === '' || tUsr === usr; // Mostrar tareas propias, heredadas o todas para admin
             });
             
         console.log('[MANT] Tareas a renderizar:', tareasNorm);
@@ -480,10 +482,11 @@ const ui = {
         if (!container) return;
         container.innerHTML = '';
 
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const usr = (localStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const isAdmin = usr === 'admin' || usr === 'administrador';
         const misRegistros = registros.filter(b => {
             const bUsr = String(b.Usuario || Object.values(b)[4] || '').toLowerCase().trim();
-            return bUsr === '' || bUsr === usr;
+            return isAdmin || bUsr === '' || bUsr === usr;
         });
 
         if (!misRegistros || misRegistros.length === 0) {
@@ -499,7 +502,7 @@ const ui = {
             const card = document.createElement('div');
             card.className = 'bitacora-card';
             card.innerHTML = `
-                <img src="${b.Imagen || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="bitacora-img" alt="Evidencia">
+                <img src="${b.Imagen || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="bitacora-img" alt="Evidencia" onclick="MainApp.abrirImagen(this.src)">
                 <div class="bitacora-content">
                     <div class="bitacora-date"><i class="fa-regular fa-calendar"></i>${utils.formatearFecha(b.Fecha)}</div>
                     <div class="bitacora-desc">${utils.escHtml(b.Descripcion)}</div>
