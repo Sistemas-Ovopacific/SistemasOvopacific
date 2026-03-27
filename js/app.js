@@ -23,8 +23,8 @@ const MainApp = {
         this.inicializarLogin();
         
         // Mostrar perfil en sidebar
-        const currentUser = localStorage.getItem('inv_currentUser');
-        const currentName = localStorage.getItem('inv_currentName') || currentUser;
+        const currentUser = sessionStorage.getItem('inv_currentUser');
+        const currentName = sessionStorage.getItem('inv_currentName') || currentUser;
         
         if (currentUser) {
             const userBox = document.getElementById('sidebar-user');
@@ -40,8 +40,8 @@ const MainApp = {
 
     logout() {
         if (confirm('¿Cerrar sesión?')) {
-            localStorage.removeItem('inv_currentUser');
-            localStorage.removeItem('inv_currentName');
+            sessionStorage.removeItem('inv_currentUser');
+            sessionStorage.removeItem('inv_currentName');
             location.reload();
         }
     },
@@ -69,11 +69,11 @@ const MainApp = {
                 const res = await api.login(user, pass);
                 if (res.success) {
                     // Guardar sesión
-                    localStorage.setItem('inv_currentUser', res.usuario);
+                    sessionStorage.setItem('inv_currentUser', res.usuario);
                     if (res.nombre) {
-                        localStorage.setItem('inv_currentName', res.nombre);
+                        sessionStorage.setItem('inv_currentName', res.nombre);
                     } else {
-                        localStorage.removeItem('inv_currentName');
+                        sessionStorage.removeItem('inv_currentName');
                     }
                     
                     const currentName = res.nombre || res.usuario;
@@ -124,7 +124,7 @@ const MainApp = {
         const logoIcon = document.getElementById('sidebar-logo-icon');
 
         // Garantizar que el perfil de usuario siga visible siempre que haya sesión
-        const currentUser = localStorage.getItem('inv_currentUser');
+        const currentUser = sessionStorage.getItem('inv_currentUser');
         if (currentUser) {
             const userBox = document.getElementById('sidebar-user');
             if (userBox) userBox.style.display = 'flex';
@@ -592,7 +592,7 @@ const MainApp = {
         const fecha = document.getElementById('inicio-tarea-fecha').value;
         if (!nombre || !fecha) return;
 
-        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
         const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha, Usuario: usr };
         
         utils.mostrarLoader('Registrando tarea...');
@@ -659,7 +659,7 @@ const MainApp = {
             return;
         }
 
-        const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
         const nueva = { 
             id: 'TR-' + Date.now().toString(), 
             Nombre: nombre, 
@@ -764,7 +764,7 @@ const MainApp = {
         try {
             // Leer y comprimir la imagen localmente
             const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
-            const usr = localStorage.getItem('inv_currentUser') || 'Admin';
+            const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
             const payload = { 
                 id: Date.now().toString(), 
                 Fecha: fecha, 
