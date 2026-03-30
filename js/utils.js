@@ -33,7 +33,10 @@ const utils = {
     // ── Formateo de Datos ──
     formatearFecha(val) {
         if (!val) return '—';
-        const d = new Date(val);
+        // Forzar interpretación local reemplazando "-" por "/" o añadiendo hora
+        // Las fechas YYYY-MM-DD en JS se asumen UTC, lo que causa desfase de un día.
+        const fechaLimpia = typeof val === 'string' ? val.split('T')[0] : val;
+        const d = new Date(fechaLimpia + 'T00:00:00'); 
         if (isNaN(d.getTime())) return val;
         return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
     },
