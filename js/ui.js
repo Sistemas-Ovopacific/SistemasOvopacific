@@ -40,23 +40,26 @@ const ui = {
         utils.animateNumber('stat-categorias', cats);
     },
 
-    renderizarProductos(productos, filtro = '') {
+    renderizarProductos(productos, filtroNombre = '', filtroFecha = '') {
         const tbody = this.els.getProductosTbody();
         if (!tbody) return;
         tbody.innerHTML = '';
 
         let lista = productos;
-        if (filtro) {
-            const f = filtro.toLowerCase().trim();
-            lista = productos.filter(p =>
+        if (filtroNombre) {
+            const f = filtroNombre.toLowerCase().trim();
+            lista = lista.filter(p =>
                 (p.Nombre || '').toLowerCase().includes(f) ||
                 (String(p.ID) || '').toLowerCase().trim().includes(f) ||
                 (p.Categoria || '').toLowerCase().includes(f)
             );
         }
+        if (filtroFecha) {
+            lista = lista.filter(p => (p.FechaRegistro || '') === filtroFecha);
+        }
 
         if (lista.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">
                 <i class="fa-solid fa-box-open"></i> No hay productos registrados
             </td></tr>`;
             return;
@@ -65,6 +68,7 @@ const ui = {
         lista.forEach(p => {
             const qty = Number(p.Cantidad) || 0;
             let badgeClass = qty > 20 ? 'stock-high' : qty > 5 ? 'stock-medium' : 'stock-low';
+            const fechaDisplay = p.FechaRegistro ? utils.formatearFecha(p.FechaRegistro) : '—';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><span class="product-code">${utils.escHtml(p.ID)}</span></td>
@@ -75,6 +79,7 @@ const ui = {
                 <td class="desc-cell">${utils.escHtml(p.Descripcion || '—')}</td>
                 <td><span class="stock-badge ${badgeClass}">${qty}</span></td>
                 <td>${utils.escHtml(p.Unidad)}</td>
+                <td><i class="fa-regular fa-calendar" style="margin-right:5px;opacity:0.6;"></i>${fechaDisplay}</td>
                 <td>
                     <div class="action-btns">
                         <button class="action-btn edit" onclick="MainApp.abrirEditarProducto('${utils.escAttr(p.ID)}')" title="Editar">

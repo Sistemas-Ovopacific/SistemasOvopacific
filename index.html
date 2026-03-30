@@ -425,11 +425,19 @@
             ══════════════════════════════════════════ -->
             <div class="view-section active" id="view-productos">
                 <div class="panel">
-                    <div class="panel-header">
+                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h2><i class="fa-solid fa-box-open"></i> Catálogo de Productos</h2>
-                        <button class="btn btn-primary btn-sm" id="btn-nuevo-producto">
-                            <i class="fa-solid fa-plus"></i> Nuevo Producto
-                        </button>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <div class="filters" style="display:flex; gap:10px;">
+                                <input type="text" id="filter-prod-nombre" placeholder="Filtrar por nombre..."
+                                    style="padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; outline:none; min-width:160px;">
+                                <input type="date" id="filter-prod-fecha"
+                                    style="padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff; outline:none;">
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="btn-nuevo-producto">
+                                <i class="fa-solid fa-plus"></i> Nuevo Producto
+                            </button>
+                        </div>
                     </div>
                     <div class="panel-body">
                         <div class="table-wrap">
@@ -442,6 +450,7 @@
                                         <th>Descripción</th>
                                         <th>Cantidad</th>
                                         <th>Unidad</th>
+                                        <th>Fecha Registro</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -709,6 +718,10 @@
                         <label for="prod-cantidad">Cantidad Disponible</label>
                         <input type="number" id="prod-cantidad" min="0" value="0">
                         <span class="helper-text">Stock inicial del producto</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-fecha">Fecha de Registro</label>
+                        <input type="date" id="prod-fecha">
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="btn-cancelar-prod">Cancelar</button>

@@ -263,12 +263,18 @@ const MainApp = {
 
     // ── EVENTOS DOM ──
     inicializarEventos() {
-        // Búsqueda
+        // Búsqueda global
         document.getElementById('global-search').addEventListener('input', e => {
             const term = e.target.value.toLowerCase().trim();
             if (this.state.vistaActual === 'productos') ui.renderizarProductos(this.state.productos, term);
             if (this.state.vistaActual === 'inventario') ui.renderizarInventario(this.state.productos, term);
         });
+
+        // Filtros de Productos
+        const filterProdNombre = document.getElementById('filter-prod-nombre');
+        const filterProdFecha = document.getElementById('filter-prod-fecha');
+        if (filterProdNombre) filterProdNombre.addEventListener('input', () => this.filtrarProductos());
+        if (filterProdFecha) filterProdFecha.addEventListener('input', () => this.filtrarProductos());
 
         // Botones Generales
         document.getElementById('btn-refresh').addEventListener('click', () => this.cargarTodosLosDatos());
@@ -312,6 +318,8 @@ const MainApp = {
         const hoy = new Date().toISOString().split('T')[0];
         document.getElementById('entrada-fecha').value = hoy;
         document.getElementById('salida-fecha').value = hoy;
+        const prodFecha = document.getElementById('prod-fecha');
+        if (prodFecha) prodFecha.value = hoy;
         
         // Entregas
         const formEntrega = document.getElementById('form-entrega');
@@ -364,6 +372,9 @@ const MainApp = {
         document.getElementById('prod-id').disabled = false;
         document.getElementById('modal-titulo').textContent = 'Nuevo Producto';
         document.getElementById('grupo-cantidad-inicial').style.display = '';
+        // Fecha de hoy por defecto
+        const prodFechaEl = document.getElementById('prod-fecha');
+        if (prodFechaEl) prodFechaEl.value = new Date().toISOString().split('T')[0];
         document.getElementById('modal-producto').classList.add('active');
     },
 
@@ -379,6 +390,8 @@ const MainApp = {
         document.getElementById('prod-unidad').value = prod.Unidad || 'Unidades';
         document.getElementById('prod-desc').value = prod.Descripcion || '';
         document.getElementById('prod-cantidad').value = prod.Cantidad || 0;
+        const prodFechaEl = document.getElementById('prod-fecha');
+        if (prodFechaEl) prodFechaEl.value = prod.FechaRegistro || '';
         document.getElementById('modal-titulo').textContent = 'Editar Producto';
         document.getElementById('grupo-cantidad-inicial').style.display = '';
         document.getElementById('modal-producto').classList.add('active');
@@ -393,6 +406,8 @@ const MainApp = {
         const idEdit = document.getElementById('prod-id-edit').value;
         const idInput = document.getElementById('prod-id').value.trim();
         const finalId = idEdit || idInput;
+        const hoy = new Date().toISOString().split('T')[0];
+        const prodFechaEl = document.getElementById('prod-fecha');
 
         const producto = {
             ID: String(finalId).trim(),
@@ -400,7 +415,8 @@ const MainApp = {
             Categoria: document.getElementById('prod-categoria').value.trim(),
             Descripcion: document.getElementById('prod-desc').value.trim(),
             Cantidad: parseInt(document.getElementById('prod-cantidad').value) || 0,
-            Unidad: document.getElementById('prod-unidad').value
+            Unidad: document.getElementById('prod-unidad').value,
+            FechaRegistro: (prodFechaEl && prodFechaEl.value) ? prodFechaEl.value : hoy
         };
 
         if (!producto.ID || !producto.Nombre || !producto.Categoria) {
@@ -520,6 +536,13 @@ const MainApp = {
         } finally {
             utils.ocultarLoader();
         }
+    },
+
+    // ── FILTROS DE PRODUCTOS ──
+    filtrarProductos() {
+        const nombre = (document.getElementById('filter-prod-nombre')?.value || '').toLowerCase().trim();
+        const fecha  = document.getElementById('filter-prod-fecha')?.value || '';
+        ui.renderizarProductos(this.state.productos, nombre, fecha);
     },
 
     // ── ACCIONES DE ENTREGAS ──
