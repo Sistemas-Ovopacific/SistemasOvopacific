@@ -12,8 +12,6 @@ const ui = {
         getSalidasTbody: () => document.getElementById('salidas-tbody'),
         getEntregasTbody: () => document.getElementById('entregas-tbody'),
         getInicioInventarioTbody: () => document.getElementById('inicio-inventario-tbody'),
-        getInicioTareasTbody: () => document.getElementById('inicio-tareas-tbody'),
-        getInicioTareasCards: () => document.getElementById('inicio-tareas-cards'),
         getTareasRecurrentesTbody: () => document.getElementById('tareas-recurrentes-tbody'),
         getMantCategoriasContainer: () => document.getElementById('mant-categorias-container'),
         getBitacoraGrid: () => document.getElementById('bitacora-grid'),
@@ -236,79 +234,7 @@ const ui = {
         });
     },
 
-    renderizarInicioTareas(tareas) {
-        // Intentar renderizar en el nuevo contenedor de tarjetas primero
-        const cardsEl = this.els.getInicioTareasCards();
-        const tbody = this.els.getInicioTareasTbody();
 
-        const hoy = new Date();
-        hoy.setHours(0,0,0,0);
-
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
-        const isAdmin = usr === 'admin' || usr === 'administrador';
-        const misTareas = tareas.filter(t => {
-            const tUsr = String(t.Usuario || Object.values(t)[5] || '').toLowerCase().trim();
-            return isAdmin || tUsr === '' || tUsr === usr;
-        });
-
-        if (!misTareas || misTareas.length === 0) {
-            const emptyHtml = `<div class="mant-empty"><i class="fa-solid fa-list-check"></i><p>No hay tareas programadas. Usa el formulario de arriba para añadir.</p></div>`;
-            if (cardsEl) cardsEl.innerHTML = emptyHtml;
-            if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No hay tareas programadas</td></tr>`;
-            return;
-        }
-
-        const sorted = [...misTareas].sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
-
-        // Renderizar en el nuevo diseño de tarjetas (si existe el contenedor)
-        if (cardsEl) {
-            cardsEl.innerHTML = '';
-            sorted.forEach(t => {
-                const fechaTarea = new Date(t.Fecha + 'T00:00:00');
-                const diff = Math.round((fechaTarea - hoy) / 86400000);
-                let barClass, badgeClass, badgeText;
-                if (diff === 0) { barClass = 'urgencia-hoy'; badgeClass = 'badge-hoy'; badgeText = 'Hoy'; }
-                else if (diff < 0) { barClass = 'urgencia-venc'; badgeClass = 'badge-venc'; badgeText = 'Vencida'; }
-                else { barClass = 'urgencia-prox'; badgeClass = 'badge-prox'; badgeText = `En ${diff} día${diff!==1?'s':''}`; }
-
-                const card = document.createElement('div');
-                card.className = 'tarea-simple-card';
-                card.innerHTML = `
-                    <div class="tarea-urgencia-bar ${barClass}"></div>
-                    <div class="tarea-simple-info">
-                        <div class="tarea-simple-nombre">${utils.escHtml(t.Nombre)}</div>
-                        <div class="tarea-simple-fecha">
-                            <i class="fa-regular fa-calendar"></i>
-                            ${utils.formatearFecha(t.Fecha)}
-                            <span class="tarea-status-badge ${badgeClass}">${badgeText}</span>
-                        </div>
-                    </div>
-                    <button class="action-btn del" onclick="MainApp.eliminarInicioTarea('${utils.escAttr(String(t.id))}')" title="Marcar completada">
-                        <i class="fa-solid fa-check"></i>
-                    </button>
-                `;
-                cardsEl.appendChild(card);
-            });
-        }
-
-        // Fallback: también llenar tbody si existe (compatibilidad)
-        if (tbody) {
-            tbody.innerHTML = '';
-            sorted.forEach(t => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${utils.formatearFecha(t.Fecha)}</td>
-                    <td><strong>${utils.escHtml(t.Nombre)}</strong></td>
-                    <td>
-                        <button class="action-btn del" onclick="MainApp.eliminarInicioTarea('${utils.escAttr(String(t.id))}')" title="Completar">
-                            <i class="fa-solid fa-check"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    },
 
     // ── TAREAS RECURRENTES ──
     generarCheckboxesMeses() {

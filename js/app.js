@@ -9,7 +9,6 @@ const MainApp = {
         entradas: [],
         salidas: [],
         entregas: [],
-        inicioTareas: [], // simples
         tareasRecurrentes: [],
         bitacora: [],
         chartInstance: null,
@@ -334,15 +333,7 @@ const MainApp = {
             document.getElementById('filter-entrega-fecha').addEventListener('input', () => this.filtrarEntregas());
         }
 
-        // Tareas del Inicio
-        const formInicioTarea = document.getElementById('form-inicio-tarea');
-        if (formInicioTarea) {
-            formInicioTarea.addEventListener('submit', e => {
-                e.preventDefault();
-                this.registrarInicioTarea();
-            });
-            document.getElementById('inicio-tarea-fecha').value = hoy;
-        }
+
 
         // Tareas Recurrentes Generar Checkboxes
         ui.generarCheckboxesMeses();
@@ -611,49 +602,7 @@ const MainApp = {
         }
     },
 
-    // ── ACCIONES INICIO TAREAS ──
-    async registrarInicioTarea() {
-        const nombre = document.getElementById('inicio-tarea-nombre').value.trim();
-        const fecha = document.getElementById('inicio-tarea-fecha').value;
-        if (!nombre || !fecha) return;
 
-        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
-        const nueva = { id: Date.now().toString(), Nombre: nombre, Fecha: fecha, Usuario: usr };
-        
-        utils.mostrarLoader('Registrando tarea...');
-        try {
-            const res = await api.post({ action: 'registrarTarea', tarea: nueva });
-            utils.mostrarToast(res.mensaje || 'Tarea programada', 'success');
-            
-            this.state.inicioTareas.push(nueva);
-            
-            document.getElementById('form-inicio-tarea').reset();
-            document.getElementById('inicio-tarea-fecha').value = new Date().toISOString().split('T')[0];
-            
-            ui.renderizarInicioTareas(this.state.inicioTareas);
-        } catch (err) {
-            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarInicioTarea(id) {
-        if (!confirm('¿Marcar tarea como completada (borrar)?')) return;
-        
-        utils.mostrarLoader('Completando tarea...');
-        try {
-            const res = await api.post({ action: 'eliminarTarea', id });
-            utils.mostrarToast(res.mensaje || 'Tarea completada', 'success');
-            
-            this.state.inicioTareas = this.state.inicioTareas.filter(t => String(t.id) !== String(id));
-            ui.renderizarInicioTareas(this.state.inicioTareas);
-        } catch (err) {
-            utils.mostrarToast('Error al completar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
 
     // ── NAVEGACIÓN TABS TAREAS ──
     switchTareasTab(tabId) {
@@ -662,7 +611,6 @@ const MainApp = {
         });
         document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
         document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora' ? 'block' : 'none';
-        document.getElementById('tab-tareas-simples').style.display     = tabId === 'simples' ? 'block' : 'none';
     },
 
     // ── ACCIONES TAREAS RECURRENTES ──

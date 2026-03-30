@@ -260,9 +260,6 @@
                         onclick="MainApp.switchTareasTab('recurrentes')">
                         <i class="fa-solid fa-calendar-days"></i> Tareas Mensuales
                     </button>
-                    <button class="tareas-tab-btn" data-tab="simples" onclick="MainApp.switchTareasTab('simples')">
-                        <i class="fa-solid fa-list-check"></i> Control Mensual
-                    </button>
                     <button class="tareas-tab-btn" data-tab="bitacora" onclick="MainApp.switchTareasTab('bitacora')">
                         <i class="fa-solid fa-camera"></i> Bitácora
                     </button>
@@ -325,55 +322,6 @@
 
                 </div><!-- /tab-tareas-recurrentes -->
 
-                <!-- ──────────────────────────────────────────
-                     TAB 2: CONTROL MENSUAL / TAREAS SIMPLES    
-                ────────────────────────────────────────── -->
-                <div id="tab-tareas-simples" style="display:none;">
-
-                    <!-- Formulario compacto -->
-                    <div class="panel mant-add-panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-plus-circle"></i> Agregar Tarea</h2>
-                        </div>
-                        <div class="panel-body">
-                            <form id="form-inicio-tarea" class="mant-form">
-                                <div class="form-group">
-                                    <label for="inicio-tarea-nombre">Descripción de la Actividad</label>
-                                    <input type="text" id="inicio-tarea-nombre" placeholder="¿Qué necesitas hacer?"
-                                        required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="inicio-tarea-fecha">Fecha Programada</label>
-                                    <input type="date" id="inicio-tarea-fecha" required>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-plus"></i> Añadir Tarea
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Lista de tareas con estado visual -->
-                    <div class="panel">
-                        <div class="panel-header" style="justify-content: space-between;">
-                            <h2><i class="fa-solid fa-list-check"></i> Tareas Programadas</h2>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <span class="mant-legend-dot" style="background:#10b981;"></span><span
-                                    class="legend-text">Hoy</span>
-                                <span class="mant-legend-dot" style="background:#ef4444;"></span><span
-                                    class="legend-text">Vencida</span>
-                                <span class="mant-legend-dot" style="background:#5b5ef4;"></span><span
-                                    class="legend-text">Próxima</span>
-                            </div>
-                        </div>
-                        <div class="panel-body" style="padding: 0;">
-                            <div id="inicio-tareas-cards"><!-- generado por JS --></div>
-                        </div>
-                    </div>
-
-                </div><!-- /tab-tareas-simples -->
 
                 <!-- ──────────────────────────────────────────
                      TAB 3: BITÁCORA DE EVIDENCIAS
