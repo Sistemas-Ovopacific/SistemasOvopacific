@@ -424,6 +424,8 @@ const MainApp = {
             return;
         }
 
+        console.log('[DEBUG] Enviando producto al servidor:', producto);
+
         utils.mostrarLoader('Guardando producto...');
         try {
             const res = await api.post({ action: 'guardarProducto', producto });
