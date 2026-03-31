@@ -290,17 +290,23 @@ const MainApp = {
                 if (this.state.tabTareasActual === 'bitacora') {
                     utils.exportarCSV(this.state.bitacora, 'bitacora', ['Fecha', 'Descripcion', 'Usuario']);
                 } else {
-                    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const mesesName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                     const dataExport = this.state.tareasRecurrentes.map(t => {
+                        // Normalización robusta (igual que en ui.js)
+                        const vals = Object.values(t);
+                        const mProgRaw = t.MesesProg || t.mesesprog || vals[3] || '[]';
+                        const mCompRaw = t.MesesComp || t.mesescomp || vals[4] || '[]';
+                        
                         let prog = []; let comp = [];
-                        try { prog = JSON.parse(t.MesesProg || '[]'); } catch(e){}
-                        try { comp = JSON.parse(t.MesesComp || '[]'); } catch(e){}
+                        try { prog = typeof mProgRaw === 'string' ? JSON.parse(mProgRaw) : (Array.isArray(mProgRaw) ? mProgRaw : []); } catch(e){}
+                        try { comp = typeof mCompRaw === 'string' ? JSON.parse(mCompRaw) : (Array.isArray(mCompRaw) ? mCompRaw : []); } catch(e){}
+                        
                         return {
-                            Actividad: t.Nombre || 'Sin nombre',
-                            Categoria: t.Categoria || 'General',
-                            Meses_Programados: prog.map(m => meses[m-1]).join(', '),
-                            Meses_Completados: comp.map(m => meses[m-1]).join(', '),
-                            Usuario: t.Usuario || ''
+                            Actividad: t.Nombre || t.nombre || t.Actividad || vals[1] || 'Sin nombre',
+                            Categoria: t.Categoria || t.categoria || t.Tipo || vals[2] || 'General',
+                            Meses_Programados: Array.isArray(prog) ? prog.map(m => mesesName[m-1]).join(', ') : '',
+                            Meses_Completados: Array.isArray(comp) ? comp.map(m => mesesName[m-1]).join(', ') : '',
+                            Usuario: t.Usuario || vals[5] || ''
                         };
                     });
                     utils.exportarCSV(dataExport, 'plan_mantenimiento', ['Actividad', 'Categoria', 'Meses_Programados', 'Meses_Completados', 'Usuario']);
