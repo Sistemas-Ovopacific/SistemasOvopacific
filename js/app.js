@@ -11,6 +11,7 @@ const MainApp = {
         entregas: [],
         tareasRecurrentes: [],
         tareasSemanales: [],
+        planPreventivo: [],
         bitacora: [],
         chartInstance: null,
         vistaActual: '', // Se setea por el portal
@@ -167,6 +168,7 @@ const MainApp = {
             // Re-renderizar con los datos ya cargados
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
             ui.renderizarTareasSemanales(this.state.tareasSemanales);
+            ui.renderizarPlanPreventivo(this.state.planPreventivo);
             ui.renderizarInicioTareas(this.state.inicioTareas);
             ui.renderizarBitacora(this.state.bitacora);
         }
@@ -212,11 +214,13 @@ const MainApp = {
             
             const tRec = tareasData.tareasRecurrentes || [];
             const tSem = tareasData.tareasSemanales || [];
+            const pPrev = tareasData.planPreventivo || []; 
             const bit = tareasData.bitacora || [];
             const tS = tareasData.inicioTareas || [];
 
             this.state.tareasRecurrentes = Array.isArray(tRec) ? tRec : [];
             this.state.tareasSemanales = Array.isArray(tSem) ? tSem : [];
+            this.state.planPreventivo = Array.isArray(pPrev) ? pPrev : [];
             this.state.bitacora = Array.isArray(bit) ? bit : [];
             this.state.inicioTareas = Array.isArray(tS) ? tS : [];
 
@@ -240,6 +244,7 @@ const MainApp = {
         if (enModuloTareas) {
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
             ui.renderizarTareasSemanales(this.state.tareasSemanales);
+            ui.renderizarPlanPreventivo(this.state.planPreventivo);
             ui.renderizarBitacora(this.state.bitacora);
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
@@ -385,6 +390,14 @@ const MainApp = {
             formSemanal.addEventListener('submit', e => {
                 e.preventDefault();
                 this.registrarTareaSemanal();
+            });
+        }
+
+        const formPrev = document.getElementById('form-preventivo-usuario');
+        if (formPrev) {
+            formPrev.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarUsuarioPreventivo();
             });
         }
 
@@ -653,8 +666,84 @@ const MainApp = {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
         document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
-        document.getElementById('tab-tareas-semanales').style.display   = tabId === 'semanales' ? 'block' : 'none';
-        document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora' ? 'block' : 'none';
+        document.getElementById('tab-tareas-semanales').style.display   = tabId === 'semanales'   ? 'block' : 'none';
+        document.getElementById('tab-tareas-preventivo').style.display  = tabId === 'preventivo'  ? 'block' : 'none';
+        document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora'    ? 'block' : 'none';
+    },
+
+    // ── ACCIONES MANTENIMIENTO PREVENTIVO ──
+    async registrarUsuarioPreventivo() {
+        const area = document.getElementById('prev-area').value.trim();
+        const nombre = document.getElementById('prev-nombre').value.trim();
+        const correo = document.getElementById('prev-correo').value.trim();
+        if (!area || !nombre) return;
+
+        const nueva = {
+            id: 'PREV-' + Date.now().toString(),
+            Area: area,
+            Usuario: nombre,
+            Correo: correo || 'N/A',
+            SemanasComp: '{}',
+            UltimaMod: new Date().toISOString()
+        };
+
+        utils.mostrarLoader('Registrando...');
+        try {
+            await api.post({ action: 'guardarUsuarioPreventivo', registro: nueva });
+            utils.mostrarToast('Registro añadido', 'success');
+            this.state.planPreventivo.push(nueva);
+            document.getElementById('form-preventivo-usuario').reset();
+            ui.renderizarPlanPreventivo(this.state.planPreventivo);
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async toggleSemanaPreventivo(id, semId) {
+        const registro = this.state.planPreventivo.find(r => String(r.id) === String(id));
+        if (!registro) return;
+
+        let comp = {};
+        try { comp = JSON.parse(registro.SemanasComp || '{}'); } catch(e){ comp = {}; }
+        
+        // Ciclo: null -> realizado -> fallo -> medio -> null
+        const actual = comp[semId];
+        let nuevo = null;
+        if (!actual) nuevo = 'realizado';
+        else if (actual === 'realizado') nuevo = 'fallo';
+        else if (actual === 'fallo') nuevo = 'medio';
+        else nuevo = null;
+
+        utils.mostrarLoader('Actualizando...');
+        try {
+            await api.post({ action: 'toggleSemanaPreventivo', id, semId, estado: nuevo });
+            
+            if (nuevo) comp[semId] = nuevo;
+            else delete comp[semId];
+            
+            registro.SemanasComp = JSON.stringify(comp);
+            ui.renderizarPlanPreventivo(this.state.planPreventivo);
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarUsuarioPreventivo(id) {
+        if (!confirm('¿Eliminar este usuario del plan preventivo?')) return;
+        utils.mostrarLoader('Eliminando...');
+        try {
+            await api.post({ action: 'eliminarUsuarioPreventivo', id });
+            this.state.planPreventivo = this.state.planPreventivo.filter(r => String(r.id) !== String(id));
+            ui.renderizarPlanPreventivo(this.state.planPreventivo);
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
     },
 
     // ── ACCIONES TAREAS SEMANALES ──

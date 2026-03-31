@@ -15,6 +15,7 @@ const ui = {
         getTareasRecurrentesTbody: () => document.getElementById('tareas-recurrentes-tbody'),
         getMantCategoriasContainer: () => document.getElementById('mant-categorias-container'),
         getMantSemanalContainer: () => document.getElementById('mant-semanal-container'),
+        getMantPreventivoTable: () => ({ thead: document.getElementById('thead-preventivo'), tbody: document.getElementById('tbody-preventivo') }),
         getBitacoraGrid: () => document.getElementById('bitacora-grid'),
         getSummaryGrid: () => document.getElementById('summary-grid'),
     },
@@ -512,6 +513,129 @@ const ui = {
 
             container.appendChild(block);
         });
+    },
+
+    // ── MANTENIMIENTO PREVENTIVO (GRILLA ANCHA CON MESES COLAPSABLES) ──
+    renderizarPlanPreventivo(plan) {
+        const { thead, tbody } = this.els.getMantPreventivoTable();
+        if (!thead || !tbody) return;
+
+        // Init collapsed state (persists across re-renders)
+        if (!window.prevCollapsed) window.prevCollapsed = new Set();
+
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const mesCorto = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+        // ── Fila 1: cabeceras de mes (colapsables) ──
+        const trMeses = document.createElement('tr');
+        trMeses.innerHTML = `
+            <th rowspan="2" class="th-sticky" style="left:0; z-index:16; width:44px; min-width:44px;"></th>
+            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:90px;">Área</th>
+            <th rowspan="2" class="th-sticky" style="left:134px; z-index:16; min-width:130px;">Usuario</th>
+            <th rowspan="2" class="th-sticky" style="left:264px; z-index:16; min-width:130px;">Correo</th>
+        `;
+
+        for (let m = 1; m <= 12; m++) {
+            const collapsed = window.prevCollapsed.has(m);
+            const th = document.createElement('th');
+            th.colSpan = collapsed ? 1 : 4;
+            th.className = 'th-mes-header' + (collapsed ? ' mes-collapsed' : '');
+            th.dataset.mes = m;
+            th.innerHTML = `
+                <button class="btn-mes-toggle" onclick="ui.toggleMesPreventivo(${m})" title="${collapsed ? 'Expandir' : 'Colapsar'} ${meses[m-1]}">
+                    ${collapsed ? mesCorto[m-1] : meses[m-1]}
+                    <i class="fa-solid fa-chevron-${collapsed ? 'right' : 'down'}" style="font-size:0.6rem; margin-left:4px;"></i>
+                </button>
+            `;
+            trMeses.appendChild(th);
+        }
+        thead.appendChild(trMeses);
+
+        // ── Fila 2: cabeceras de semana ──
+        const trSems = document.createElement('tr');
+        for (let m = 1; m <= 12; m++) {
+            const collapsed = window.prevCollapsed.has(m);
+            if (collapsed) {
+                // Columna resumen cuando está colapsado
+                const th = document.createElement('th');
+                th.className = 'th-sem-resumen';
+                th.dataset.mes = m;
+                th.textContent = '✓/✕';
+                th.style.fontSize = '0.6rem';
+                trSems.appendChild(th);
+            } else {
+                for (let w = 1; w <= 4; w++) {
+                    const th = document.createElement('th');
+                    th.className = 'th-sem';
+                    th.dataset.mes = m;
+                    th.textContent = `S${w}`;
+                    th.style.fontSize = '0.6rem';
+                    trSems.appendChild(th);
+                }
+            }
+        }
+        thead.appendChild(trSems);
+
+        // ── Cuerpo ──
+        if (!plan || plan.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="52" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-table-cells" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros en el plan preventivo.</td></tr>`;
+            return;
+        }
+
+        plan.forEach(reg => {
+            let comp = {};
+            try { comp = JSON.parse(reg.SemanasComp || '{}'); } catch(e){}
+
+            const tr = document.createElement('tr');
+            let html = `
+                <td class="td-sticky" style="left:0; width:44px; min-width:44px;">
+                    <button class="btn-icon" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" style="color:#ef4444;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+                <td class="td-sticky" style="left:44px; min-width:90px; font-size:0.75rem;">${utils.escHtml(reg.Area)}</td>
+                <td class="td-sticky" style="left:134px; min-width:130px;"><strong style="font-size:0.75rem;">${utils.escHtml(reg.Usuario)}</strong></td>
+                <td class="td-sticky" style="left:264px; min-width:130px; font-size:0.6rem; color:#64748b;">${utils.escHtml(reg.Correo)}</td>
+            `;
+
+            for (let m = 1; m <= 12; m++) {
+                const collapsed = window.prevCollapsed.has(m);
+                if (collapsed) {
+                    // Columna resumen: cuenta de realizadas en el mes
+                    let cnt = 0;
+                    for (let w = 1; w <= 4; w++) {
+                        if (comp[`M${m}W${w}`] === 'realizado') cnt++;
+                    }
+                    const hasFallo = [1,2,3,4].some(w => comp[`M${m}W${w}`] === 'fallo');
+                    const cls = cnt === 4 ? 'res-real' : (hasFallo ? 'res-fallo' : cnt > 0 ? 'res-medio' : '');
+                    html += `<td class="cell-week cell-mes-resumen ${cls}" style="font-weight:700; font-size:0.7rem;" title="${meses[m-1]}: ${cnt}/4 realizadas">${cnt}/4</td>`;
+                } else {
+                    for (let w = 1; w <= 4; w++) {
+                        const semId = `M${m}W${w}`;
+                        const estado = comp[semId];
+                        const clash = estado ? `res-${estado}` : '';
+                        const icon = estado === 'realizado' ? '✓' : (estado === 'fallo' ? '✕' : (estado === 'medio' ? '•' : ''));
+                        html += `<td class="cell-week ${clash}" onclick="MainApp.toggleSemanaPreventivo('${utils.escAttr(String(reg.id))}', '${semId}')" title="${meses[m-1]} S${w}">${icon}</td>`;
+                    }
+                }
+            }
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+    },
+
+    // Toggling a month collapse (called from HTML inline)
+    toggleMesPreventivo(mes) {
+        if (!window.prevCollapsed) window.prevCollapsed = new Set();
+        if (window.prevCollapsed.has(mes)) window.prevCollapsed.delete(mes);
+        else window.prevCollapsed.add(mes);
+        // Re-render preserving current plan data from MainApp state
+        if (window.MainApp && MainApp.state && MainApp.state.planPreventivo) {
+            this.renderizarPlanPreventivo(MainApp.state.planPreventivo);
+        }
     },
 
     // ── BITÁCORA ──

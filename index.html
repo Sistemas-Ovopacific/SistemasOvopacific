@@ -256,12 +256,14 @@
 
                 <!-- TABS DE NAVEGACIÓN -->
                 <div class="tareas-tabs-nav">
-                    <button class="tareas-tab-btn active" data-tab="recurrentes"
-                        onclick="MainApp.switchTareasTab('recurrentes')">
-                        <i class="fa-solid fa-calendar-days"></i> Tareas Mensuales
+                    <button class="tareas-tab-btn active" data-tab="recurrentes" onclick="MainApp.switchTareasTab('recurrentes')">
+                        <i class="fa-solid fa-calendar-days"></i> Mensual
                     </button>
                     <button class="tareas-tab-btn" data-tab="semanales" onclick="MainApp.switchTareasTab('semanales')">
-                        <i class="fa-solid fa-calendar-week"></i> Tareas Semanales
+                        <i class="fa-solid fa-calendar-week"></i> Semanal
+                    </button>
+                    <button class="tareas-tab-btn" data-tab="preventivo" onclick="MainApp.switchTareasTab('preventivo')">
+                        <i class="fa-solid fa-microchip"></i> Preventivo
                     </button>
                     <button class="tareas-tab-btn" data-tab="bitacora" onclick="MainApp.switchTareasTab('bitacora')">
                         <i class="fa-solid fa-camera"></i> Bitácora
@@ -370,6 +372,57 @@
                         </div>
                     </div>
                 </div><!-- /tab-tareas-semanales -->
+
+                <!-- ──────────────────────────────────────────
+                     TAB 3: MANTENIMIENTO PREVENTIVO (GRILLA)
+                ────────────────────────────────────────── -->
+                <div id="tab-tareas-preventivo" style="display:none;">
+                    <div class="panel mant-add-panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-user-plus"></i> Agregar Equipo / Usuario al Plan</h2>
+                        </div>
+                        <div class="panel-body">
+                            <form id="form-preventivo-usuario" class="form-grid">
+                                <div class="form-group">
+                                    <label>Área</label>
+                                    <input type="text" id="prev-area" placeholder="Ej: Producción" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre / Usuario</label>
+                                    <input type="text" id="prev-nombre" placeholder="Ej: Jesús Felipe Urbano" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="prev-correo" placeholder="ejemplo@ovopacific.com">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa-solid fa-save"></i> Registrar en el Plan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <h2><i class="fa-solid fa-table-cells"></i> Seguimiento de Mantenimiento Preventivo</h2>
+                            <div class="preventivo-legend">
+                                <span class="leg-item"><span class="box res-real"></span> Realizadas</span>
+                                <span class="leg-item"><span class="box res-fallo"></span> No Realizadas</span>
+                                <span class="leg-item"><span class="box res-medio"></span> Medio</span>
+                            </div>
+                        </div>
+                        <div class="panel-body" style="padding:0; overflow:hidden;">
+                            <div class="preventivo-scroll-wrap">
+                                <table class="preventivo-table" id="table-preventivo">
+                                    <thead id="thead-preventivo"></thead>
+                                    <tbody id="tbody-preventivo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /tab-tareas-preventivo -->
 
 
                 <!-- ──────────────────────────────────────────
