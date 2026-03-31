@@ -190,7 +190,7 @@ const MainApp = {
             return;
         }
 
-        utils.mostrarLoader('Cargando datos desde Google Sheets...');
+        utils.mostrarLoader('Cargando...');
         ui.setConexionStatus('connecting');
 
         try {

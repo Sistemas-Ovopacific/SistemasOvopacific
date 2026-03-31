@@ -210,7 +210,7 @@
     const bootMessages = [
         'Abriendo portal dimensional...',
         'Sincronizando matrices...',
-        'Conectando con Google Sheets...',
+        'Cargando...',
         'Cargando módulos...',
         'Atravesando el umbral...',
         'Bienvenido ✓'
