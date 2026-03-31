@@ -515,7 +515,7 @@ const ui = {
         });
     },
 
-    // ── MANTENIMIENTO PREVENTIVO (LISTA SIMPLE + PANEL DE MES) ──
+    // ── MANTENIMIENTO PREVENTIVO (LISTA + PANEL DE MES) ──
     renderizarPlanPreventivo(plan) {
         const { thead, tbody } = this.els.getMantPreventivoTable();
         if (!thead || !tbody) return;
@@ -524,30 +524,44 @@ const ui = {
         tbody.innerHTML = '';
         this.cerrarDetalleMes();
 
-        // Simple header: only Área and Usuario
+        // Header
         thead.innerHTML = `
             <tr>
-                <th style="width:44px; min-width:44px;"></th>
-                <th style="min-width:130px; text-align:left; padding-left:12px;">Área</th>
-                <th style="min-width:180px; text-align:left; padding-left:12px;">Usuario / Equipo</th>
+                <th style="width:52px; min-width:52px;"></th>
+                <th style="min-width:200px; text-align:left; padding-left:16px;">Usuario / Equipo</th>
+                <th style="min-width:120px; text-align:left; padding-left:12px;">Área</th>
+                <th style="width:44px;"></th>
             </tr>
         `;
 
         if (!plan || plan.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-users" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros. Agrega un equipo o usuario arriba.</td></tr>`;
+            tbody.innerHTML = `
+                <tr><td colspan="4" style="padding:48px; text-align:center;">
+                    <div style="opacity:0.25; font-size:2.5rem; margin-bottom:10px;">🖥️</div>
+                    <div style="color:#94a3b8; font-size:0.88rem; font-weight:600;">Aún no hay equipos registrados</div>
+                    <div style="color:#cbd5e1; font-size:0.78rem; margin-top:4px;">Agrega el primer equipo usando el formulario de arriba</div>
+                </td></tr>`;
             return;
         }
 
         plan.forEach(reg => {
+            const initials = (reg.Usuario || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="width:44px; text-align:center;">
-                    <button class="btn-icon" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" style="color:#ef4444;" title="Eliminar">
+                <td style="width:52px; padding:10px; text-align:center;">
+                    <div class="prev-avatar">${initials}</div>
+                </td>
+                <td style="text-align:left; padding:10px 12px;">
+                    <div style="font-weight:700; font-size:0.85rem; color:#1e293b;">${utils.escHtml(reg.Usuario)}</div>
+                </td>
+                <td style="text-align:left; padding:10px 12px;">
+                    <span style="background:#ede9fe; color:#6d28d9; border-radius:20px; padding:3px 10px; font-size:0.72rem; font-weight:700;">${utils.escHtml(reg.Area)}</span>
+                </td>
+                <td style="width:44px; padding:8px; text-align:center;">
+                    <button class="btn-icon" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" style="color:#ef4444; opacity:0.6;" title="Eliminar">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
-                <td style="font-size:0.8rem; text-align:left; padding-left:12px;">${utils.escHtml(reg.Area)}</td>
-                <td style="text-align:left; padding-left:12px;"><strong style="font-size:0.8rem;">${utils.escHtml(reg.Usuario)}</strong></td>
             `;
             tbody.appendChild(tr);
         });

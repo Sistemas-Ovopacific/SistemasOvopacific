@@ -377,58 +377,54 @@
                      TAB 3: MANTENIMIENTO PREVENTIVO (GRILLA)
                 ────────────────────────────────────────── -->
                 <div id="tab-tareas-preventivo" style="display:none;">
-                    <div class="panel mant-add-panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-user-plus"></i> Agregar Equipo / Usuario al Plan</h2>
+
+                    <!-- ─── Cabecera degradada ─── -->
+                    <div class="prev-hero">
+                        <div class="prev-hero-text">
+                            <h2><i class="fa-solid fa-shield-halved"></i> Mantenimiento Preventivo</h2>
+                            <p>Registra equipos y haz seguimiento semanal por mes</p>
                         </div>
-                        <div class="panel-body">
-                            <form id="form-preventivo-usuario" class="form-grid">
-                                <div class="form-group">
-                                    <label>Área</label>
-                                    <input type="text" id="prev-area" placeholder="Ej: Producción" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Nombre / Usuario</label>
-                                    <input type="text" id="prev-nombre" placeholder="Ej: Jesús Felipe Urbano" required>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-save"></i> Registrar en el Plan
-                                    </button>
-                                </div>
-                            </form>
+                        <!-- Selector de mes incrustado en el hero -->
+                        <div class="prev-mes-selector-hero">
+                            <label><i class="fa-solid fa-calendar-days"></i> Mes a revisar</label>
+                            <select id="prev-mes-select" onchange="ui.abrirDetalleMes(parseInt(this.value))">
+                                <option value="">— Seleccionar —</option>
+                                <option value="1">Enero</option><option value="2">Febrero</option>
+                                <option value="3">Marzo</option><option value="4">Abril</option>
+                                <option value="5">Mayo</option><option value="6">Junio</option>
+                                <option value="7">Julio</option><option value="8">Agosto</option>
+                                <option value="9">Septiembre</option><option value="10">Octubre</option>
+                                <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                            </select>
                         </div>
                     </div>
 
+                    <!-- ─── Formulario de registro ─── -->
+                    <div class="prev-add-card">
+                        <div class="prev-add-icon"><i class="fa-solid fa-user-plus"></i></div>
+                        <form id="form-preventivo-usuario" class="prev-add-form">
+                            <div class="prev-field">
+                                <label>Área</label>
+                                <input type="text" id="prev-area" placeholder="Ej: Producción" required>
+                            </div>
+                            <div class="prev-field">
+                                <label>Nombre / Equipo</label>
+                                <input type="text" id="prev-nombre" placeholder="Ej: Jesús Felipe Urbano" required>
+                            </div>
+                            <button type="submit" class="prev-add-btn">
+                                <i class="fa-solid fa-circle-plus"></i> Agregar
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- ─── Lista de equipos ─── -->
                     <div class="panel">
-                        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                            <h2><i class="fa-solid fa-table-cells"></i> Seguimiento de Mantenimiento Preventivo</h2>
-                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                                <!-- Selector de mes -->
-                                <div class="prev-mes-selector">
-                                    <label for="prev-mes-select"><i class="fa-solid fa-calendar-days"></i> Ver mes:</label>
-                                    <select id="prev-mes-select" onchange="ui.abrirDetalleMes(parseInt(this.value))">
-                                        <option value="">— Seleccionar mes —</option>
-                                        <option value="1">Enero</option>
-                                        <option value="2">Febrero</option>
-                                        <option value="3">Marzo</option>
-                                        <option value="4">Abril</option>
-                                        <option value="5">Mayo</option>
-                                        <option value="6">Junio</option>
-                                        <option value="7">Julio</option>
-                                        <option value="8">Agosto</option>
-                                        <option value="9">Septiembre</option>
-                                        <option value="10">Octubre</option>
-                                        <option value="11">Noviembre</option>
-                                        <option value="12">Diciembre</option>
-                                    </select>
-                                </div>
-                                <!-- Leyenda -->
-                                <div class="preventivo-legend">
-                                    <span class="leg-item"><span class="box res-real"></span> Realizadas</span>
-                                    <span class="leg-item"><span class="box res-fallo"></span> No Realizadas</span>
-                                    <span class="leg-item"><span class="box res-medio"></span> Medio</span>
-                                </div>
+                        <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                            <h2><i class="fa-solid fa-users"></i> Equipos Registrados</h2>
+                            <div class="preventivo-legend">
+                                <span class="leg-item"><span class="box res-real"></span> Realizado</span>
+                                <span class="leg-item"><span class="box res-fallo"></span> No Realizado</span>
+                                <span class="leg-item"><span class="box res-medio"></span> Medio</span>
                             </div>
                         </div>
                         <div class="panel-body" style="padding:0;">
@@ -441,7 +437,7 @@
                         </div>
                     </div>
 
-                    <!-- Panel de Detalle de Mes (se abre al hacer clic en un mes) -->
+                    <!-- ─── Panel de detalle de mes ─── -->
                     <div id="preventivo-detail-panel" class="prev-detail-panel" style="display:none;">
                         <div class="prev-detail-header">
                             <h3 id="prev-detail-title"><i class="fa-solid fa-calendar-days"></i> Detalle del Mes</h3>
