@@ -14,9 +14,8 @@ const MainApp = {
         planPreventivo: [],
         bitacora: [],
         chartInstance: null,
-        vistaActual: '', // Se setea por el portal
-        moduloActual: '',
-        tabTareasActual: 'recurrentes'
+        vistaActual: '', // Vista activa (ej: 'productos', 'tareas-recurrentes')
+        moduloActual: '', // Módulo principal (ej: 'inventario', 'tareas')
     },
 
     init() {
@@ -113,10 +112,16 @@ const MainApp = {
         });
     },
 
-    // ── NAVEGACIÓN ──
+    /**
+     * Inicializa los eventos de clic del sidebar para el menú de inventario.
+     * El menú de tareas usa 'onclick' directamente en el HTML para mayor claridad.
+     */
     inicializarNavegacion() {
-        document.querySelectorAll('#nav-links li, #nav-links-tareas li').forEach(li => {
-            li.addEventListener('click', () => this.cambiarVista(li.dataset.view));
+        // Navegación de Inventario
+        document.querySelectorAll('#nav-links li').forEach(li => {
+            li.addEventListener('click', () => {
+                if (li.dataset.view) this.cambiarVista(li.dataset.view);
+            });
         });
     },
 
@@ -157,7 +162,9 @@ const MainApp = {
             document.getElementById('nav-menu-tareas').style.display = 'block';
             const miniStats = document.querySelector('.mini-stats');
             if (miniStats) miniStats.style.display = 'none';
-            this.cambiarVista('inicio-tareas-view');
+            
+            // Al entrar a tareas, mostramos por defecto la vista Mensual (recurrentes)
+            this.switchTareasView('recurrentes');
             
             document.getElementById('page-title').textContent = 'Seguimiento de Tareas';
             document.getElementById('page-subtitle').textContent = 'Mis responsabilidades y actividades programadas';
@@ -174,15 +181,54 @@ const MainApp = {
         }
     },
 
+    /**
+     * Cambia la vista activa del sistema, gestionando clases 'active' en sidebar y secciones.
+     * @param {string} vista - Nombre de la vista (id sin el prefijo 'view-')
+     */
     cambiarVista(vista) {
         this.state.vistaActual = vista;
-        document.querySelectorAll('#nav-links li, #nav-links-tareas li').forEach(li => {
+
+        // Actualizar estados del sidebar (Inventario)
+        document.querySelectorAll('#nav-links li').forEach(li => {
             li.classList.toggle('active', li.dataset.view === vista);
         });
+
+        // Actualizar estados del sidebar (Tareas)
+        document.querySelectorAll('#nav-links-tareas li').forEach(li => {
+            li.classList.toggle('active', li.dataset.tareasView === vista);
+        });
+
+        // Mostrar la sección correspondiente
         document.querySelectorAll('.view-section').forEach(sec => {
             sec.classList.toggle('active', sec.id === `view-${vista}`);
         });
+
         this.actualizarUI();
+    },
+
+    /**
+     * Especializado para cambiar entre las sub-vistas del módulo de Tareas.
+     * @param {string} viewName - Nombre de la subview de tareas
+     */
+    switchTareasView(viewName) {
+        // En nuestro nuevo diseño, las sub-vistas son vistas de primer nivel en el sidebar
+        // Pero para mantener compatibilidad con las IDs de las secciones:
+        const fullViewId = viewName === 'usuarios' ? 'usuarios' : `tareas-${viewName}`;
+        this.cambiarVista(fullViewId);
+        
+        // Actualizar títulos según la vista
+        const titles = {
+            'recurrentes': ['Mantenimiento Mensual', 'Programación de actividades fijas por mes'],
+            'semanales': ['Seguimiento Semanal', 'Actividades de rutina de Lunes a Viernes'],
+            'preventivo': ['Plan Preventivo', 'Control de mantenimiento por equipo'],
+            'usuarios': ['Equipos Registrados', 'Administración de usuarios y equipos del sistema'],
+            'bitacora': ['Bitácora de Evidencias', 'Registro fotográfico de actividades realizadas']
+        };
+
+        if (titles[viewName]) {
+            document.getElementById('page-title').textContent = titles[viewName][0];
+            document.getElementById('page-subtitle').textContent = titles[viewName][1];
+        }
     },
 
     // ── DATOS ──

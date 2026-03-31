@@ -20,6 +20,10 @@ const ui = {
         getSummaryGrid: () => document.getElementById('summary-grid'),
     },
 
+    /**
+     * Actualiza el indicador de estado de conexión en el sidebar.
+     * @param {string} estado - 'ok', 'error' o 'connecting'
+     */
     setConexionStatus(estado) {
         const el = this.els.getConnectionStatus();
         if (!el) return;
@@ -235,10 +239,13 @@ const ui = {
             tbody.appendChild(tr);
         });
     },
+    // ============================================================
+    //  MÓDULO: TAREAS (MANTENIMIENTO)
+    // ============================================================
 
-
-
-    // ── TAREAS RECURRENTES ──
+    /**
+     * Genera dinámicamente los checkboxes (pills) para los 12 meses en el form de recurrentes.
+     */
     generarCheckboxesMeses() {
         const container = document.getElementById('tr-meses-checkboxes');
         if (!container) return;
@@ -515,7 +522,10 @@ const ui = {
         });
     },
 
-    // ── MANTENIMIENTO PREVENTIVO (LISTA + PANEL DE MES) ──
+    /**
+     * Mantenimiento Preventivo — Lista de Usuarios/Equipos
+     * Esta función puebla la tabla en la sección de 'Usuarios Registrados'.
+     */
     renderizarPlanPreventivo(plan) {
         const { thead, tbody } = this.els.getMantPreventivoTable();
         if (!thead || !tbody) return;
@@ -567,7 +577,11 @@ const ui = {
         });
     },
 
-    // Open the detail panel for a specific month
+    /**
+     * Mantenimiento Preventivo — Panel de Seguimiento Mensual
+     * Abre un panel flotante para marcar el progreso semanal de un mes específico.
+     * @param {number} mes - Número del mes (1-12)
+     */
     abrirDetalleMes(mes) {
         const plan = window.MainApp && MainApp.state ? MainApp.state.planPreventivo : [];
         const panel = document.getElementById('preventivo-detail-panel');

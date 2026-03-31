@@ -174,13 +174,37 @@
 
                 <!-- MENU TAREAS -->
                 <div id="nav-menu-tareas" style="display: none;">
-                    <div class="nav-section-title">Personal</div>
+
+                    <!-- Sección Mantenimiento -->
+                    <div class="nav-section-title">Mantenimiento</div>
                     <ul id="nav-links-tareas">
-                        <li class="active" data-view="inicio-tareas-view">
-                            <i class="fa-solid fa-list-check"></i>
-                            <span>Mis Tareas</span>
+                        <li class="active" data-tareas-view="recurrentes" onclick="MainApp.switchTareasView('recurrentes')">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <span>Mensual</span>
+                        </li>
+                        <li data-tareas-view="semanales" onclick="MainApp.switchTareasView('semanales')">
+                            <i class="fa-solid fa-calendar-week"></i>
+                            <span>Semanal</span>
+                        </li>
+                        <li data-tareas-view="preventivo" onclick="MainApp.switchTareasView('preventivo')">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Preventivo</span>
+                        </li>
+                        <li data-tareas-view="bitacora" onclick="MainApp.switchTareasView('bitacora')">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Bitácora</span>
                         </li>
                     </ul>
+
+                    <!-- Sección Administración -->
+                    <div class="nav-section-title" style="margin-top:18px;">Administración</div>
+                    <ul>
+                        <li data-tareas-view="usuarios" onclick="MainApp.switchTareasView('usuarios')">
+                            <i class="fa-solid fa-users"></i>
+                            <span>Usuarios Registrados</span>
+                        </li>
+                    </ul>
+
                 </div>
             </div>
 
@@ -247,259 +271,223 @@
             </div>
 
             <!-- ══════════════════════════════════════════
-                 VISTA: TAREAS (MÓDULO SEPARADO)
+                 VISTA: TAREAS MENSUALES RECURRENTES
             ══════════════════════════════════════════ -->
-            <!-- ══════════════════════════════════════════
-                 VISTA: TAREAS (MÓDULO SEPARADO)
-            ══════════════════════════════════════════ -->
-            <div class="view-section" id="view-inicio-tareas-view">
-
-                <!-- TABS DE NAVEGACIÓN -->
-                <div class="tareas-tabs-nav">
-                    <button class="tareas-tab-btn active" data-tab="recurrentes" onclick="MainApp.switchTareasTab('recurrentes')">
-                        <i class="fa-solid fa-calendar-days"></i> Mensual
-                    </button>
-                    <button class="tareas-tab-btn" data-tab="semanales" onclick="MainApp.switchTareasTab('semanales')">
-                        <i class="fa-solid fa-calendar-week"></i> Semanal
-                    </button>
-                    <button class="tareas-tab-btn" data-tab="preventivo" onclick="MainApp.switchTareasTab('preventivo')">
-                        <i class="fa-solid fa-microchip"></i> Preventivo
-                    </button>
-                    <button class="tareas-tab-btn" data-tab="bitacora" onclick="MainApp.switchTareasTab('bitacora')">
-                        <i class="fa-solid fa-camera"></i> Bitácora
-                    </button>
-                </div>
-
-                <!-- ──────────────────────────────────────────
-                     TAB 1: TAREAS MENSUALES RECURRENTES
-                ────────────────────────────────────────── -->
-                <div id="tab-tareas-recurrentes">
-
-                    <!-- Formulario inline para agregar tarea recurrente -->
-                    <div class="panel mant-add-panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-plus-circle"></i> Nueva Tarea de Mantenimiento</h2>
-                        </div>
-                        <div class="panel-body">
-                            <form id="form-tarea-recurrente" class="mant-form">
-                                <div class="form-group">
-                                    <label for="tr-nombre">Nombre de la Actividad</label>
-                                    <input type="text" id="tr-nombre"
-                                        placeholder="Ej: Limpieza de equipos, Revisión de servidores..." required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="tr-categoria">Categoría del Equipo</label>
-                                    <input type="text" id="tr-categoria" list="categorias-list"
-                                        placeholder="Ej: Computadoras, CCTV, General..." required>
-                                    <datalist id="categorias-list">
-                                        <!-- Opciones generadas por JS -->
-                                    </datalist>
-                                </div>
-                                <div class="form-group full-width">
-                                    <label>Meses Programados</label>
-                                    <div class="meses-pills-row" id="tr-meses-checkboxes"><!-- generado por JS --></div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-save"></i> Guardar Programación
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+            <div class="view-section" id="view-tareas-recurrentes">
+                <!-- Formulario inline para agregar tarea recurrente -->
+                <div class="panel mant-add-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-plus-circle"></i> Nueva Tarea de Mantenimiento</h2>
                     </div>
-
-                    <!-- Vista de categorías con tarjetas -->
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-calendar-check"></i> Plan de Mantenimiento — <span
-                                    id="mant-year-label">2026</span></h2>
-                            <div class="meses-header-labels" aria-hidden="true">
-                                <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span>
-                                <span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
+                    <div class="panel-body">
+                        <form id="form-tarea-recurrente" class="mant-form">
+                            <div class="form-group">
+                                <label for="tr-nombre">Nombre de la Actividad</label>
+                                <input type="text" id="tr-nombre"
+                                    placeholder="Ej: Limpieza de equipos, Revisión de servidores..." required>
                             </div>
-                        </div>
-                        <div class="panel-body" style="padding: 0;">
-                            <div id="mant-categorias-container">
-                                <!-- Generado dinámicamente por JS -->
+                            <div class="form-group">
+                                <label for="tr-categoria">Categoría del Equipo</label>
+                                <input type="text" id="tr-categoria" list="categorias-list"
+                                    placeholder="Ej: Computadoras, CCTV, General..." required>
+                                <datalist id="categorias-list">
+                                    <!-- Opciones generadas por JS -->
+                                </datalist>
                             </div>
-                        </div>
-                    </div>
-
-                </div><!-- /tab-tareas-recurrentes -->
-                
-                <!-- ──────────────────────────────────────────
-                     TAB 2: TAREAS SEMANALES (LUN-VIE)
-                ────────────────────────────────────────── -->
-                <div id="tab-tareas-semanales" style="display:none;">
-                    <div class="panel mant-add-panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-plus-circle"></i> Nueva Tarea Semanal (Lunes-Viernes)</h2>
-                        </div>
-                        <div class="panel-body">
-                            <form id="form-tarea-semanal" class="mant-form">
-                                <div class="form-group">
-                                    <label for="ts-nombre">Actividad Semanal</label>
-                                    <input type="text" id="ts-nombre" placeholder="Ej: Revisión diaria de backups, Control de clima..." required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="ts-categoria">Categoría</label>
-                                    <input type="text" id="ts-categoria" list="categorias-list" placeholder="Ej: Datacenter, General..." required>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-save"></i> Crear Tarea Semanal
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-calendar-week"></i> Seguimiento Semanal (L-V)</h2>
-                            <div class="dias-header-labels" style="display:flex; gap:10px; font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
-                                <span style="width:30px; text-align:center;">Lun</span>
-                                <span style="width:30px; text-align:center;">Mar</span>
-                                <span style="width:30px; text-align:center;">Mie</span>
-                                <span style="width:30px; text-align:center;">Jue</span>
-                                <span style="width:30px; text-align:center;">Vie</span>
+                            <div class="form-group full-width">
+                                <label>Meses Programados</label>
+                                <div class="meses-pills-row" id="tr-meses-checkboxes"><!-- generado por JS --></div>
                             </div>
-                        </div>
-                        <div class="panel-body" style="padding: 0;">
-                            <div id="mant-semanal-container">
-                                <!-- Generado por JS -->
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Guardar Programación
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                </div><!-- /tab-tareas-semanales -->
-
-                <!-- ──────────────────────────────────────────
-                     TAB 3: MANTENIMIENTO PREVENTIVO (GRILLA)
-                ────────────────────────────────────────── -->
-                <div id="tab-tareas-preventivo" style="display:none;">
-
-                    <!-- ─── Cabecera degradada ─── -->
-                    <div class="prev-hero">
-                        <div class="prev-hero-text">
-                            <h2><i class="fa-solid fa-shield-halved"></i> Mantenimiento Preventivo</h2>
-                            <p>Registra equipos y haz seguimiento semanal por mes</p>
-                        </div>
-                        <!-- Selector de mes incrustado en el hero -->
-                        <div class="prev-mes-selector-hero">
-                            <label><i class="fa-solid fa-calendar-days"></i> Mes a revisar</label>
-                            <select id="prev-mes-select" onchange="ui.abrirDetalleMes(parseInt(this.value))">
-                                <option value="">— Seleccionar —</option>
-                                <option value="1">Enero</option><option value="2">Febrero</option>
-                                <option value="3">Marzo</option><option value="4">Abril</option>
-                                <option value="5">Mayo</option><option value="6">Junio</option>
-                                <option value="7">Julio</option><option value="8">Agosto</option>
-                                <option value="9">Septiembre</option><option value="10">Octubre</option>
-                                <option value="11">Noviembre</option><option value="12">Diciembre</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- ─── Formulario de registro ─── -->
-                    <div class="prev-add-card">
-                        <div class="prev-add-icon"><i class="fa-solid fa-user-plus"></i></div>
-                        <form id="form-preventivo-usuario" class="prev-add-form">
-                            <div class="prev-field">
-                                <label>Área</label>
-                                <input type="text" id="prev-area" placeholder="Ej: Producción" required>
-                            </div>
-                            <div class="prev-field">
-                                <label>Nombre / Equipo</label>
-                                <input type="text" id="prev-nombre" placeholder="Ej: Jesús Felipe Urbano" required>
-                            </div>
-                            <button type="submit" class="prev-add-btn">
-                                <i class="fa-solid fa-circle-plus"></i> Agregar
-                            </button>
                         </form>
                     </div>
+                </div>
 
-                    <!-- ─── Lista de equipos ─── -->
-                    <div class="panel">
-                        <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                            <h2><i class="fa-solid fa-users"></i> Equipos Registrados</h2>
-                            <div class="preventivo-legend">
-                                <span class="leg-item"><span class="box res-real"></span> Realizado</span>
-                                <span class="leg-item"><span class="box res-fallo"></span> No Realizado</span>
-                                <span class="leg-item"><span class="box res-medio"></span> Medio</span>
-                            </div>
-                        </div>
-                        <div class="panel-body" style="padding:0;">
-                            <div class="preventivo-scroll-wrap">
-                                <table class="preventivo-table" id="table-preventivo">
-                                    <thead id="thead-preventivo"></thead>
-                                    <tbody id="tbody-preventivo"></tbody>
-                                </table>
-                            </div>
+                <!-- Vista de categorías con tarjetas -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-calendar-check"></i> Plan de Mantenimiento — <span
+                                id="mant-year-label">2026</span></h2>
+                        <div class="meses-header-labels" aria-hidden="true">
+                            <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span>
+                            <span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
                         </div>
                     </div>
-
-                    <!-- ─── Panel de detalle de mes ─── -->
-                    <div id="preventivo-detail-panel" class="prev-detail-panel" style="display:none;">
-                        <div class="prev-detail-header">
-                            <h3 id="prev-detail-title"><i class="fa-solid fa-calendar-days"></i> Detalle del Mes</h3>
-                            <button class="btn-close-detail" onclick="ui.cerrarDetalleMes()" title="Cerrar">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+                    <div class="panel-body" style="padding: 0;">
+                        <div id="mant-categorias-container">
+                            <!-- Generado dinámicamente por JS -->
                         </div>
-                        <div class="prev-detail-scroll">
-                            <table class="preventivo-table" id="table-prev-detail">
-                                <thead id="thead-prev-detail"></thead>
-                                <tbody id="tbody-prev-detail"></tbody>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════
+                 VISTA: TAREAS SEMANALES (LUN-VIE)
+            ══════════════════════════════════════════ -->
+            <div class="view-section" id="view-tareas-semanales">
+                <div class="panel mant-add-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-plus-circle"></i> Nueva Tarea Semanal (Lunes-Viernes)</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form id="form-tarea-semanal" class="mant-form">
+                            <div class="form-group">
+                                <label for="ts-nombre">Actividad Semanal</label>
+                                <input type="text" id="ts-nombre" placeholder="Ej: Revisión diaria de backups, Control de clima..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ts-categoria">Categoría</label>
+                                <input type="text" id="ts-categoria" list="categorias-list" placeholder="Ej: Datacenter, General..." required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Crear Tarea Semanal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-calendar-week"></i> Seguimiento Semanal (L-V)</h2>
+                        <div class="dias-header-labels" style="display:flex; gap:10px; font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                            <span style="width:30px; text-align:center;">Lun</span>
+                            <span style="width:30px; text-align:center;">Mar</span>
+                            <span style="width:30px; text-align:center;">Mie</span>
+                            <span style="width:30px; text-align:center;">Jue</span>
+                            <span style="width:30px; text-align:center;">Vie</span>
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding: 0;">
+                        <div id="mant-semanal-container">
+                            <!-- Generado por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════
+                 VISTA: MANTENIMIENTO PREVENTIVO
+            ══════════════════════════════════════════ -->
+            <div class="view-section" id="view-tareas-preventivo">
+                <!-- Cabecera degradada -->
+                <div class="prev-hero">
+                    <div class="prev-hero-text">
+                        <h2><i class="fa-solid fa-shield-halved"></i> Mantenimiento Preventivo</h2>
+                        <p>Seguimiento semanal por mes de equipos registrados</p>
+                    </div>
+                    <div class="prev-mes-selector-hero">
+                        <label><i class="fa-solid fa-calendar-days"></i> Mes a revisar</label>
+                        <select id="prev-mes-select" onchange="ui.abrirDetalleMes(parseInt(this.value))">
+                            <option value="">— Seleccionar —</option>
+                            <option value="1">Enero</option><option value="2">Febrero</option>
+                            <option value="3">Marzo</option><option value="4">Abril</option>
+                            <option value="5">Mayo</option><option value="6">Junio</option>
+                            <option value="7">Julio</option><option value="8">Agosto</option>
+                            <option value="9">Septiembre</option><option value="10">Octubre</option>
+                            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Panel de detalle de mes (se abre al seleccionar mes) -->
+                <div id="preventivo-detail-panel" class="prev-detail-panel" style="display:none;">
+                    <div class="prev-detail-header">
+                        <h3 id="prev-detail-title"><i class="fa-solid fa-calendar-days"></i> Detalle del Mes</h3>
+                        <button class="btn-close-detail" onclick="ui.cerrarDetalleMes()" title="Cerrar">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="prev-detail-scroll">
+                        <table class="preventivo-table" id="table-prev-detail">
+                            <thead id="thead-prev-detail"></thead>
+                            <tbody id="tbody-prev-detail"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════
+                 VISTA: ADMINISTRACIÓN DE USUARIOS/EQUIPOS
+            ══════════════════════════════════════════ -->
+            <div class="view-section" id="view-usuarios">
+                <div class="prev-add-card">
+                    <div class="prev-add-icon"><i class="fa-solid fa-user-plus"></i></div>
+                    <form id="form-preventivo-usuario" class="prev-add-form">
+                        <div class="prev-field">
+                            <label>Área</label>
+                            <input type="text" id="prev-area" placeholder="Ej: Producción" required>
+                        </div>
+                        <div class="prev-field">
+                            <label>Nombre / Equipo</label>
+                            <input type="text" id="prev-nombre" placeholder="Ej: Jesús Felipe Urbano" required>
+                        </div>
+                        <button type="submit" class="prev-add-btn">
+                            <i class="fa-solid fa-circle-plus"></i> Agregar Equipo
+                        </button>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                        <h2><i class="fa-solid fa-users"></i> Equipos Registrados en el Sistema</h2>
+                    </div>
+                    <div class="panel-body" style="padding:0;">
+                        <div class="preventivo-scroll-wrap">
+                            <table class="preventivo-table" id="table-preventivo">
+                                <thead id="thead-preventivo"></thead>
+                                <tbody id="tbody-preventivo"></tbody>
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                </div><!-- /tab-tareas-preventivo -->
-
-
-                <!-- ──────────────────────────────────────────
-                     TAB 3: BITÁCORA DE EVIDENCIAS
-                ────────────────────────────────────────── -->
-                <div id="tab-tareas-bitacora" style="display:none;">
-
-                    <div class="panel mant-add-panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-cloud-arrow-up"></i> Registrar Evidencia</h2>
-                        </div>
-                        <div class="panel-body">
-                            <form id="form-bitacora" class="form-grid">
-                                <div class="form-group">
-                                    <label for="bitacora-fecha">Fecha</label>
-                                    <input type="date" id="bitacora-fecha" required>
-                                </div>
-                                <div class="form-group full-width">
-                                    <label for="bitacora-desc">Descripción de la Actividad</label>
-                                    <input type="text" id="bitacora-desc" placeholder="¿Qué se realizó?" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="bitacora-file">Imagen de Evidencia</label>
-                                    <input type="file" id="bitacora-file" accept="image/*" required>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i> Registrar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+            <!-- ══════════════════════════════════════════
+                 VISTA: BITÁCORA DE EVIDENCIAS
+            ══════════════════════════════════════════ -->
+            <div class="view-section" id="view-tareas-bitacora">
+                <div class="panel mant-add-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-cloud-arrow-up"></i> Registrar Evidencia</h2>
                     </div>
-
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h2><i class="fa-solid fa-images"></i> Historial de Evidencias</h2>
-                        </div>
-                        <div class="panel-body">
-                            <div class="bitacora-grid" id="bitacora-grid"><!-- cards generadas por JS --></div>
-                        </div>
+                    <div class="panel-body">
+                        <form id="form-bitacora" class="form-grid">
+                            <div class="form-group">
+                                <label for="bitacora-fecha">Fecha</label>
+                                <input type="date" id="bitacora-fecha" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="bitacora-desc">Descripción de la Actividad</label>
+                                <input type="text" id="bitacora-desc" placeholder="¿Qué se realizó?" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="bitacora-file">Imagen de Evidencia</label>
+                                <input type="file" id="bitacora-file" accept="image/*" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Registrar
+                                </button>
+                            </div>
+                        </form>
                     </div>
+                </div>
 
-                </div><!-- /tab-tareas-bitacora -->
-
-            </div><!-- /view-inicio-tareas-view -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-images"></i> Historial de Evidencias</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="bitacora-grid" id="bitacora-grid"><!-- cards generadas por JS --></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ══════════════════════════════════════════
                  VISTA: PRODUCTOS
