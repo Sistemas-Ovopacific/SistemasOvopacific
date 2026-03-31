@@ -13,7 +13,8 @@ const MainApp = {
         bitacora: [],
         chartInstance: null,
         vistaActual: '', // Se setea por el portal
-        moduloActual: ''
+        moduloActual: '',
+        tabTareasActual: 'recurrentes'
     },
 
     init() {
@@ -284,7 +285,30 @@ const MainApp = {
 
         // Botones Generales
         document.getElementById('btn-refresh').addEventListener('click', () => this.cargarTodosLosDatos());
-        document.getElementById('btn-export-inv').addEventListener('click', () => utils.exportarCSV(this.state.productos));
+        document.getElementById('btn-export-inv').addEventListener('click', () => {
+            if (this.state.moduloActual === 'tareas') {
+                if (this.state.tabTareasActual === 'bitacora') {
+                    utils.exportarCSV(this.state.bitacora, 'bitacora', ['Fecha', 'Descripcion', 'Usuario']);
+                } else {
+                    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const dataExport = this.state.tareasRecurrentes.map(t => {
+                        let prog = []; let comp = [];
+                        try { prog = JSON.parse(t.MesesProg || '[]'); } catch(e){}
+                        try { comp = JSON.parse(t.MesesComp || '[]'); } catch(e){}
+                        return {
+                            Actividad: t.Nombre || 'Sin nombre',
+                            Categoria: t.Categoria || 'General',
+                            Meses_Programados: prog.map(m => meses[m-1]).join(', '),
+                            Meses_Completados: comp.map(m => meses[m-1]).join(', '),
+                            Usuario: t.Usuario || ''
+                        };
+                    });
+                    utils.exportarCSV(dataExport, 'plan_mantenimiento', ['Actividad', 'Categoria', 'Meses_Programados', 'Meses_Completados', 'Usuario']);
+                }
+            } else {
+                utils.exportarCSV(this.state.productos, 'inventario', ['ID', 'Nombre', 'Categoria', 'Descripcion', 'Cantidad', 'Unidad', 'FechaRegistro']);
+            }
+        });
 
         // Modal Productos
         const modalProd = document.getElementById('modal-producto');
@@ -613,6 +637,7 @@ const MainApp = {
 
     // ── NAVEGACIÓN TABS TAREAS ──
     switchTareasTab(tabId) {
+        this.state.tabTareasActual = tabId;
         document.querySelectorAll('.tareas-tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
         });

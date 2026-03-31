@@ -78,24 +78,35 @@ const utils = {
         }, 30);
     },
     
-    // ── Exportación CSV ──
-    exportarCSV(productos) {
-        if (!productos || productos.length === 0) { 
+    // ── Exportación CSV Genérica ──
+    exportarCSV(data, filename = 'export', headers = null) {
+        if (!data || data.length === 0) { 
             this.mostrarToast('No hay datos para exportar', 'warning'); 
             return; 
         }
-        const headers = ['ID', 'Nombre', 'Categoria', 'Descripcion', 'Cantidad', 'Unidad'];
-        const rows = productos.map(p => headers.map(h => `"${(p[h] || '').toString().replace(/"/g, '""')}"`).join(','));
-        const csv = [headers.join(','), ...rows].join('\n');
+        
+        // Si no se dan headers, usar las llaves del primer objeto
+        const finalHeaders = headers || Object.keys(data[0]);
+        
+        const rows = data.map(item => {
+            return finalHeaders.map(h => {
+                let val = item[h];
+                if (val === null || val === undefined) val = '';
+                // Limpiar saltos de línea y escapar comillas
+                const str = val.toString().replace(/\n/g, ' ').replace(/"/g, '""');
+                return `"${str}"`;
+            }).join(',');
+        });
+        
+        const csv = [finalHeaders.join(','), ...rows].join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         
-        // Limpieza de object URL
         setTimeout(() => URL.revokeObjectURL(link.href), 100);
-        this.mostrarToast('Inventario exportado como CSV', 'success');
+        this.mostrarToast(`${filename.charAt(0).toUpperCase() + filename.slice(1)} exportado`, 'success');
     }
 };
 
