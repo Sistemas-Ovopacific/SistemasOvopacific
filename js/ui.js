@@ -533,9 +533,8 @@ const ui = {
         const trMeses = document.createElement('tr');
         trMeses.innerHTML = `
             <th rowspan="2" class="th-sticky" style="left:0; z-index:16; width:44px; min-width:44px;"></th>
-            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:90px;">Área</th>
-            <th rowspan="2" class="th-sticky" style="left:134px; z-index:16; min-width:130px;">Usuario</th>
-            <th rowspan="2" class="th-sticky" style="left:264px; z-index:16; min-width:130px;">Correo</th>
+            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:110px;">Área</th>
+            <th rowspan="2" class="th-sticky" style="left:154px; z-index:16; min-width:160px;">Usuario / Equipo</th>
         `;
 
         for (let m = 1; m <= 12; m++) {
@@ -596,9 +595,8 @@ const ui = {
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
-                <td class="td-sticky" style="left:44px; min-width:90px; font-size:0.75rem;">${utils.escHtml(reg.Area)}</td>
-                <td class="td-sticky" style="left:134px; min-width:130px;"><strong style="font-size:0.75rem;">${utils.escHtml(reg.Usuario)}</strong></td>
-                <td class="td-sticky" style="left:264px; min-width:130px; font-size:0.6rem; color:#64748b;">${utils.escHtml(reg.Correo)}</td>
+                <td class="td-sticky" style="left:44px; min-width:110px; font-size:0.75rem;">${utils.escHtml(reg.Area)}</td>
+                <td class="td-sticky" style="left:154px; min-width:160px;"><strong style="font-size:0.75rem;">${utils.escHtml(reg.Usuario)}</strong></td>
             `;
 
             for (let m = 1; m <= 12; m++) {

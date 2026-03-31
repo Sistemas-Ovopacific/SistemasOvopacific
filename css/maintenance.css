@@ -493,13 +493,33 @@
    MANTENIMIENTO PREVENTIVO (GRILLA ANCHA)
    ══════════════════════════════════════════════════════════ */
 .preventivo-scroll-wrap {
-    overflow-x: auto;
+    overflow-x: scroll;
+    overflow-y: auto;
     width: 100%;
     position: relative;
     border-radius: 8px;
     border: 1px solid var(--border-subtle);
     background: #fff;
-    max-height: 70vh;
+    max-height: 65vh;
+}
+
+.preventivo-scroll-wrap::-webkit-scrollbar {
+    height: 10px;
+    width: 6px;
+}
+
+.preventivo-scroll-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.preventivo-scroll-wrap::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 10px;
+}
+
+.preventivo-scroll-wrap::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
 }
 
 .preventivo-table {
