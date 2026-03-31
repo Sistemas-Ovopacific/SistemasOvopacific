@@ -85,8 +85,8 @@ const utils = {
             return; 
         }
         
-        // Si no se dan headers, usar las llaves del primer objeto
         const finalHeaders = headers || Object.keys(data[0]);
+        const separator = ';'; // Semicolón para mejor compatibilidad con Excel en español
         
         const rows = data.map(item => {
             return finalHeaders.map(h => {
@@ -95,10 +95,10 @@ const utils = {
                 // Limpiar saltos de línea y escapar comillas
                 const str = val.toString().replace(/\n/g, ' ').replace(/"/g, '""');
                 return `"${str}"`;
-            }).join(',');
+            }).join(separator);
         });
         
-        const csv = [finalHeaders.join(','), ...rows].join('\n');
+        const csv = [finalHeaders.join(separator), ...rows].join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
