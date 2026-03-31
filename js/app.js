@@ -121,6 +121,7 @@ const MainApp = {
         this.state.moduloActual = mode;
         const logoText = document.getElementById('sidebar-logo-text');
         const logoIcon = document.getElementById('sidebar-logo-icon');
+        const searchWrap = document.querySelector('.search-wrap');
 
         // Garantizar que el perfil de usuario siga visible siempre que haya sesión
         const currentUser = sessionStorage.getItem('inv_currentUser');
@@ -130,9 +131,11 @@ const MainApp = {
         }
 
         if (mode === 'inventario') {
+            if (searchWrap) searchWrap.style.display = 'block';
             document.getElementById('nav-menu-inventario').style.display = 'block';
             document.getElementById('nav-menu-tareas').style.display = 'none';
-            document.querySelector('.mini-stats').style.display = 'flex';
+            const miniStats = document.querySelector('.mini-stats');
+            if (miniStats) miniStats.style.display = 'flex';
             this.cambiarVista('productos');
             
             document.getElementById('page-title').textContent = 'Inventario';
@@ -142,9 +145,15 @@ const MainApp = {
             if (logoIcon) logoIcon.className = `fa-solid fa-boxes-stacked`;
             
         } else if (mode === 'tareas') {
+            if (searchWrap) {
+                searchWrap.style.display = 'none';
+                const searchInput = searchWrap.querySelector('input');
+                if (searchInput) searchInput.value = ''; // Limpiar búsqueda al cambiar
+            }
             document.getElementById('nav-menu-inventario').style.display = 'none';
             document.getElementById('nav-menu-tareas').style.display = 'block';
-            document.querySelector('.mini-stats').style.display = 'none';
+            const miniStats = document.querySelector('.mini-stats');
+            if (miniStats) miniStats.style.display = 'none';
             this.cambiarVista('inicio-tareas-view');
             
             document.getElementById('page-title').textContent = 'Seguimiento de Tareas';

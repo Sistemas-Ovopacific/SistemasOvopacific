@@ -2,7 +2,7 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyU-_WTDLpDlVMbdtdIpzrSoiqUYHKrRfAepz01050da8P5ZIfxbEwaT4_o0zK861NNFw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwOoKFxxiXckj0R-y0RUXr4hL2FyvyGfEeLXtcyrjQ0ct8vHImRyA9i1lXRyZ16-vao7A/exec';
 
 const api = {
     async get(action) {
