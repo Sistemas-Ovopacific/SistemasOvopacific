@@ -515,72 +515,53 @@ const ui = {
         });
     },
 
-    // ── MANTENIMIENTO PREVENTIVO (GRILLA ANCHA CON MESES COLAPSABLES) ──
+    // ── MANTENIMIENTO PREVENTIVO (GRILLA COMPACTA + PANEL DE DETALLE) ──
     renderizarPlanPreventivo(plan) {
         const { thead, tbody } = this.els.getMantPreventivoTable();
         if (!thead || !tbody) return;
 
-        // Init collapsed state (persists across re-renders)
-        if (!window.prevCollapsed) window.prevCollapsed = new Set();
-
         thead.innerHTML = '';
         tbody.innerHTML = '';
 
-        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-        const mesCorto = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        // Close the detail panel on re-render
+        this.cerrarDetalleMes();
 
-        // ── Fila 1: cabeceras de mes (colapsables) ──
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Sep','Oct','Nov','Dic'];
+
+        // ── Fila 1: columnas fijas + mes (siempre 1 columna por mes) ──
         const trMeses = document.createElement('tr');
         trMeses.innerHTML = `
             <th rowspan="2" class="th-sticky" style="left:0; z-index:16; width:44px; min-width:44px;"></th>
-            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:110px;">Área</th>
-            <th rowspan="2" class="th-sticky" style="left:154px; z-index:16; min-width:160px;">Usuario / Equipo</th>
+            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:120px;">Área</th>
+            <th rowspan="2" class="th-sticky" style="left:164px; z-index:16; min-width:160px;">Usuario / Equipo</th>
         `;
-
         for (let m = 1; m <= 12; m++) {
-            const collapsed = window.prevCollapsed.has(m);
             const th = document.createElement('th');
-            th.colSpan = collapsed ? 1 : 4;
-            th.className = 'th-mes-header' + (collapsed ? ' mes-collapsed' : '');
-            th.dataset.mes = m;
+            th.className = 'th-mes-header';
             th.innerHTML = `
-                <button class="btn-mes-toggle" onclick="ui.toggleMesPreventivo(${m})" title="${collapsed ? 'Expandir' : 'Colapsar'} ${meses[m-1]}">
-                    ${collapsed ? mesCorto[m-1] : meses[m-1]}
-                    <i class="fa-solid fa-chevron-${collapsed ? 'right' : 'down'}" style="font-size:0.6rem; margin-left:4px;"></i>
+                <button class="btn-mes-toggle" onclick="ui.abrirDetalleMes(${m})" title="Ver detalle de ${meses[m-1]}">
+                    ${meses[m-1]}
+                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.55rem; margin-left:4px;"></i>
                 </button>
             `;
             trMeses.appendChild(th);
         }
         thead.appendChild(trMeses);
 
-        // ── Fila 2: cabeceras de semana ──
-        const trSems = document.createElement('tr');
+        // ── Fila 2: sub-header debajo de cada mes (muestra el total/4) ──
+        const trSub = document.createElement('tr');
         for (let m = 1; m <= 12; m++) {
-            const collapsed = window.prevCollapsed.has(m);
-            if (collapsed) {
-                // Columna resumen cuando está colapsado
-                const th = document.createElement('th');
-                th.className = 'th-sem-resumen';
-                th.dataset.mes = m;
-                th.textContent = '✓/✕';
-                th.style.fontSize = '0.6rem';
-                trSems.appendChild(th);
-            } else {
-                for (let w = 1; w <= 4; w++) {
-                    const th = document.createElement('th');
-                    th.className = 'th-sem';
-                    th.dataset.mes = m;
-                    th.textContent = `S${w}`;
-                    th.style.fontSize = '0.6rem';
-                    trSems.appendChild(th);
-                }
-            }
+            const th = document.createElement('th');
+            th.className = 'th-sem-resumen';
+            th.textContent = '✓/4';
+            th.style.fontSize = '0.6rem';
+            trSub.appendChild(th);
         }
-        thead.appendChild(trSems);
+        thead.appendChild(trSub);
 
         // ── Cuerpo ──
         if (!plan || plan.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="52" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-table-cells" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros en el plan preventivo.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="15" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-table-cells" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros en el plan preventivo.</td></tr>`;
             return;
         }
 
@@ -595,45 +576,85 @@ const ui = {
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
-                <td class="td-sticky" style="left:44px; min-width:110px; font-size:0.75rem;">${utils.escHtml(reg.Area)}</td>
-                <td class="td-sticky" style="left:154px; min-width:160px;"><strong style="font-size:0.75rem;">${utils.escHtml(reg.Usuario)}</strong></td>
+                <td class="td-sticky" style="left:44px; min-width:120px; font-size:0.78rem;">${utils.escHtml(reg.Area)}</td>
+                <td class="td-sticky" style="left:164px; min-width:160px;"><strong style="font-size:0.78rem;">${utils.escHtml(reg.Usuario)}</strong></td>
             `;
 
+            // One summary cell per month
             for (let m = 1; m <= 12; m++) {
-                const collapsed = window.prevCollapsed.has(m);
-                if (collapsed) {
-                    // Columna resumen: cuenta de realizadas en el mes
-                    let cnt = 0;
-                    for (let w = 1; w <= 4; w++) {
-                        if (comp[`M${m}W${w}`] === 'realizado') cnt++;
-                    }
-                    const hasFallo = [1,2,3,4].some(w => comp[`M${m}W${w}`] === 'fallo');
-                    const cls = cnt === 4 ? 'res-real' : (hasFallo ? 'res-fallo' : cnt > 0 ? 'res-medio' : '');
-                    html += `<td class="cell-week cell-mes-resumen ${cls}" style="font-weight:700; font-size:0.7rem;" title="${meses[m-1]}: ${cnt}/4 realizadas">${cnt}/4</td>`;
-                } else {
-                    for (let w = 1; w <= 4; w++) {
-                        const semId = `M${m}W${w}`;
-                        const estado = comp[semId];
-                        const clash = estado ? `res-${estado}` : '';
-                        const icon = estado === 'realizado' ? '✓' : (estado === 'fallo' ? '✕' : (estado === 'medio' ? '•' : ''));
-                        html += `<td class="cell-week ${clash}" onclick="MainApp.toggleSemanaPreventivo('${utils.escAttr(String(reg.id))}', '${semId}')" title="${meses[m-1]} S${w}">${icon}</td>`;
-                    }
+                let cnt = 0;
+                for (let w = 1; w <= 4; w++) {
+                    if (comp[`M${m}W${w}`] === 'realizado') cnt++;
                 }
+                const hasFallo = [1,2,3,4].some(w => comp[`M${m}W${w}`] === 'fallo');
+                const cls = cnt === 4 ? 'res-real' : (hasFallo ? 'res-fallo' : cnt > 0 ? 'res-medio' : '');
+                html += `<td class="cell-week ${cls}" style="font-weight:700; font-size:0.72rem; cursor:pointer;" onclick="ui.abrirDetalleMes(${m})" title="Ver ${meses[m-1]}">${cnt}/4</td>`;
             }
             tr.innerHTML = html;
             tbody.appendChild(tr);
         });
     },
 
-    // Toggling a month collapse (called from HTML inline)
-    toggleMesPreventivo(mes) {
-        if (!window.prevCollapsed) window.prevCollapsed = new Set();
-        if (window.prevCollapsed.has(mes)) window.prevCollapsed.delete(mes);
-        else window.prevCollapsed.add(mes);
-        // Re-render preserving current plan data from MainApp state
-        if (window.MainApp && MainApp.state && MainApp.state.planPreventivo) {
-            this.renderizarPlanPreventivo(MainApp.state.planPreventivo);
+    // Open the detail panel for a specific month
+    abrirDetalleMes(mes) {
+        const plan = window.MainApp && MainApp.state ? MainApp.state.planPreventivo : [];
+        const panel = document.getElementById('preventivo-detail-panel');
+        const title = document.getElementById('prev-detail-title');
+        const thead = document.getElementById('thead-prev-detail');
+        const tbody = document.getElementById('tbody-prev-detail');
+        if (!panel || !thead || !tbody) return;
+
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const mesNombre = meses[mes - 1];
+
+        title.innerHTML = `<i class="fa-solid fa-calendar-days"></i> Detalle — ${mesNombre}`;
+        panel.style.display = 'block';
+
+        // Scroll panel into view
+        setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+
+        // Header
+        thead.innerHTML = `
+            <tr>
+                <th class="th-sticky" style="left:0; z-index:16; min-width:120px;">\u00c1rea</th>
+                <th class="th-sticky" style="left:120px; z-index:16; min-width:160px;">Usuario</th>
+                <th>Semana 1</th>
+                <th>Semana 2</th>
+                <th>Semana 3</th>
+                <th>Semana 4</th>
+            </tr>
+        `;
+
+        // Body
+        tbody.innerHTML = '';
+        if (!plan || plan.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; color:#94a3b8; text-align:center;">Sin registros.</td></tr>`;
+            return;
         }
+        plan.forEach(reg => {
+            let comp = {};
+            try { comp = JSON.parse(reg.SemanasComp || '{}'); } catch(e){}
+            const tr = document.createElement('tr');
+            let html = `
+                <td class="td-sticky" style="left:0; min-width:120px; font-size:0.8rem;">${utils.escHtml(reg.Area)}</td>
+                <td class="td-sticky" style="left:120px; min-width:160px;"><strong style="font-size:0.8rem;">${utils.escHtml(reg.Usuario)}</strong></td>
+            `;
+            for (let w = 1; w <= 4; w++) {
+                const semId = `M${mes}W${w}`;
+                const estado = comp[semId];
+                const clash = estado ? `res-${estado}` : '';
+                const icon = estado === 'realizado' ? '✓' : (estado === 'fallo' ? '✕' : (estado === 'medio' ? '•' : ''));
+                html += `<td class="cell-week ${clash}" style="min-width:80px; font-size:0.85rem; cursor:pointer;" onclick="MainApp.toggleSemanaPreventivo('${utils.escAttr(String(reg.id))}', '${semId}')" title="S${w}">${icon}</td>`;
+            }
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+    },
+
+    // Close the detail panel
+    cerrarDetalleMes() {
+        const panel = document.getElementById('preventivo-detail-panel');
+        if (panel) panel.style.display = 'none';
     },
 
     // ── BITÁCORA ──

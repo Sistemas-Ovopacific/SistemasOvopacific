@@ -716,6 +716,9 @@ const MainApp = {
         else if (actual === 'fallo') nuevo = 'medio';
         else nuevo = null;
 
+        // Get current month from semId (M1W2 -> mes = 1)
+        const mesActual = parseInt(semId.match(/M(\d+)W/)[1]);
+
         utils.mostrarLoader('Actualizando...');
         try {
             await api.post({ action: 'toggleSemanaPreventivo', id, semId, estado: nuevo });
@@ -725,6 +728,8 @@ const MainApp = {
             
             registro.SemanasComp = JSON.stringify(comp);
             ui.renderizarPlanPreventivo(this.state.planPreventivo);
+            // Re-open the detail panel for the same month
+            ui.abrirDetalleMes(mesActual);
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {

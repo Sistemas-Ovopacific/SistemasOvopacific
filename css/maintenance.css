@@ -522,6 +522,83 @@
     background: #64748b;
 }
 
+/* ── Panel de Detalle de Mes ── */
+.prev-detail-panel {
+    background: #fff;
+    border: 2px solid #6366f1;
+    border-radius: 12px;
+    margin-top: 16px;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    animation: slideDownIn 0.2s ease;
+    overflow: hidden;
+}
+
+@keyframes slideDownIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.prev-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: #fff;
+}
+
+.prev-detail-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-close-detail {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.btn-close-detail:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+.prev-detail-scroll {
+    overflow-x: scroll;
+    overflow-y: auto;
+    max-height: 55vh;
+}
+
+.prev-detail-scroll::-webkit-scrollbar {
+    height: 8px;
+    width: 6px;
+}
+
+.prev-detail-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.prev-detail-scroll::-webkit-scrollbar-thumb {
+    background: #818cf8;
+    border-radius: 6px;
+}
+
+.prev-detail-scroll::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+}
+
 .preventivo-table {
     width: max-content;
     border-collapse: collapse;

@@ -418,6 +418,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Panel de Detalle de Mes (se abre al hacer clic en un mes) -->
+                    <div id="preventivo-detail-panel" class="prev-detail-panel" style="display:none;">
+                        <div class="prev-detail-header">
+                            <h3 id="prev-detail-title"><i class="fa-solid fa-calendar-days"></i> Detalle del Mes</h3>
+                            <button class="btn-close-detail" onclick="ui.cerrarDetalleMes()" title="Cerrar">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="prev-detail-scroll">
+                            <table class="preventivo-table" id="table-prev-detail">
+                                <thead id="thead-prev-detail"></thead>
+                                <tbody id="tbody-prev-detail"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div><!-- /tab-tareas-preventivo -->
 
 
