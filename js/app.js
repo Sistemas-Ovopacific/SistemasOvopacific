@@ -164,7 +164,6 @@ const MainApp = {
             
             // Re-renderizar con los datos ya cargados
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-            ui.renderizarInicioTareas(this.state.inicioTareas);
             ui.renderizarBitacora(this.state.bitacora);
         }
     },
@@ -242,7 +241,6 @@ const MainApp = {
 
         const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
         if (enModuloTareas) {
-            ui.renderizarInicioTareas(this.state.inicioTareas);
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
             ui.renderizarBitacora(this.state.bitacora);
         }
