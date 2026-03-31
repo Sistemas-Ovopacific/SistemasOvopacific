@@ -2,9 +2,31 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwOoKFxxiXckj0R-y0RUXr4hL2FyvyGfEeLXtcyrjQ0ct8vHImRyA9i1lXRyZ16-vao7A/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzj7iE8Nz-RXU5ia5rvAReNJNkAZ9qiuK_AZaFjh3qCY5TZeNLvTnhBu34YPObVFJyCMQ/exec';
 
 const api = {
+    // Clave para localStorage
+    SESSION_KEY: 'ovopacific_session',
+
+    setSession(user) {
+        localStorage.setItem(this.SESSION_KEY, JSON.stringify(user));
+    },
+
+    getSession() {
+        try {
+            const s = localStorage.getItem(this.SESSION_KEY);
+            return s ? JSON.parse(s) : null;
+        } catch (e) {
+            console.error("Error al leer sesión:", e);
+            return null;
+        }
+    },
+
+    logout() {
+        localStorage.removeItem(this.SESSION_KEY);
+        window.location.reload();
+    },
+
     async get(action) {
         const res = await fetch(`${GAS_URL}?action=${action}&t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -18,10 +40,19 @@ const api = {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (data.error) throw new Error(data.error);
+
+        // Almacenar sesión si es exitoso
+        this.setSession(data);
         return data;
     },
 
     async post(payload) {
+        // Adjuntar usuario actual a cualquier envío de datos
+        const user = this.getSession();
+        if (user && user.usuario) {
+            payload.UsuarioSistema = user.usuario;
+        }
+
         const parseTextSafe = (text) => {
             const trimmed = text.trim();
             if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {

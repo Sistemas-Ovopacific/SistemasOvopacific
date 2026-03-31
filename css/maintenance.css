@@ -1,101 +1,75 @@
 /* ============================================================
-   maintenance.css — Módulo de Tareas / Mantenimiento
-   Estilos exclusivos del módulo "Seguimiento de Tareas"
+   maintenance.css — Módulo de Mantenimiento (Sistemas Ovopacific)
+   V3.0 - Rediseño Premium y Organización de Vistas
    ============================================================ */
 
-/* ══════════════════════════════════════════════════════════
-   NAVEGACIÓN DE TABS
-══════════════════════════════════════════════════════════ */
-.tareas-tabs-nav {
+/* ── Animaciones de Vista ────────────────────────────────── */
+.view-section {
+    display: none;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 32px;
+    animation: slideUp 0.3s ease-out;
+}
+
+.view-section.active {
     display: flex;
-    gap: 4px;
-    background: #ffffff;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius);
-    padding: 6px;
-    box-shadow: var(--shadow-sm);
 }
 
-.tareas-tab-btn {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    font-weight: 500;
-    font-family: 'Outfit', sans-serif;
-    padding: 10px 16px;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    white-space: nowrap;
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.tareas-tab-btn:hover {
-    background: var(--bg-dark);
-    color: var(--text-primary);
-}
-
-.tareas-tab-btn.active {
-    background: var(--accent);
-    color: #ffffff;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(91, 94, 244, 0.3);
-}
-
-/* ══════════════════════════════════════════════════════════
-   FORMULARIO DE MANTENIMIENTO
-══════════════════════════════════════════════════════════ */
+/* ── Formularios Premium ─────────────────────────────────── */
 .mant-form {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: flex-end;
 }
 
-.mant-form .form-group.full-width { grid-column: 1 / -1; }
-.mant-form .form-actions          { grid-column: 1 / -1; }
-.mant-add-panel                   { border-left: 3px solid var(--accent); }
+.mant-form .form-group.full-width {
+    grid-column: 1 / -1;
+}
 
-/* ══════════════════════════════════════════════════════════
-   PILLS DE MESES (SELECTOR)
-══════════════════════════════════════════════════════════ */
+.form-actions {
+    margin-top: 10px;
+}
+
+/* ── Pills de Meses (Selector Actividades) ────────────────── */
 .meses-pills-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 4px 0;
+    gap: 10px;
+    margin-top: 8px;
 }
 
 .mes-pill-label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     border-radius: 99px;
-    border: 1.5px solid var(--border-subtle);
-    background: var(--bg-dark);
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 500;
-    color: var(--text-secondary);
-    transition: all 0.2s ease;
-    user-select: none;
+    color: #64748b;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mes-pill-label:hover {
+    background: #f8fafc;
     border-color: var(--accent);
     color: var(--accent);
-    background: rgba(91, 94, 244, 0.06);
 }
 
 .mes-pill-label input[type="checkbox"] {
-    width: auto;
     accent-color: var(--accent);
-    cursor: pointer;
+    width: 16px;
+    height: 16px;
 }
 
 .mes-pill-label:has(input:checked) {
@@ -105,112 +79,68 @@
     font-weight: 600;
 }
 
-/* ══════════════════════════════════════════════════════════
-   CABECERA DE MESES DEL PLAN ANUAL
-══════════════════════════════════════════════════════════ */
-.meses-header-labels {
+/* ── Cabeceras de Tabla (Meses/Días) ─────────────────────── */
+.meses-header-labels, .dias-header-labels {
     display: flex;
-    gap: 2px;
+    gap: 4px;
+    margin-left: auto;
 }
 
-.meses-header-labels span {
-    width: 36px;
+.meses-header-labels span, .dias-header-labels span {
+    width: 32px;
     text-align: center;
     font-size: 0.65rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-/* ══════════════════════════════════════════════════════════
-   BLOQUES DE CATEGORÍA
-══════════════════════════════════════════════════════════ */
+/* ── Bloques de Categoría en Tablas ──────────────────────── */
 .mant-categoria-block {
-    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 0;
+    border-bottom: 1px solid #f1f5f9;
 }
-
-.mant-categoria-block:last-child { border-bottom: none; }
 
 .mant-categoria-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 22px;
-    background: #f8faff;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 14px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .mant-cat-icon {
-    width: 32px;
-    height: 32px;
+    width: 30px; height: 30px;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    color: #fff;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 0.85rem;
 }
 
 .mant-cat-title {
-    font-size: 0.875rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #1e293b;
     flex: 1;
 }
 
-/* Barra de progreso de categoría */
-.mant-cat-progress-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 160px;
-}
-
-.mant-progress-bar {
-    flex: 1;
-    height: 6px;
-    background: var(--bg-dark);
-    border-radius: 99px;
-    overflow: hidden;
-}
-
-.mant-progress-fill {
-    height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, var(--accent), #818cf8);
-    transition: width 0.5s ease;
-}
-
-.mant-progress-pct {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    min-width: 30px;
-    text-align: right;
-}
-
-/* ══════════════════════════════════════════════════════════
-   FILAS DE ACTIVIDAD (PLAN ANUAL)
-══════════════════════════════════════════════════════════ */
 .mant-tarea-row {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 12px 22px;
-    border-bottom: 1px solid #f0f4ff;
-    transition: background 0.15s;
+    padding: 12px 24px;
+    transition: background 0.15s ease;
 }
 
-.mant-tarea-row:last-child { border-bottom: none; }
-.mant-tarea-row:hover      { background: var(--bg-hover); }
+.mant-tarea-row:hover {
+    background: #f8fbff;
+}
 
 .mant-tarea-nombre {
-    flex: 0 0 260px;
-    font-size: 0.875rem;
+    flex: 0 0 280px;
+    font-size: 0.88rem;
     font-weight: 500;
-    color: var(--text-primary);
+    color: #334155;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -220,13 +150,10 @@
     display: flex;
     gap: 4px;
     flex: 1;
+    justify-content: flex-end;
 }
 
-.mant-tarea-actions { flex-shrink: 0; }
-
-/* ══════════════════════════════════════════════════════════
-   CÍRCULOS DE MES (ESTADO)
-══════════════════════════════════════════════════════════ */
+/* ── Puntos de Estado (Meses/Semanas) ─────────────────────── */
 .mes-dot {
     width: 32px;
     height: 32px;
@@ -234,738 +161,147 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    cursor: default;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     border: 2px solid transparent;
-    flex-shrink: 0;
 }
 
-.mes-dot.inactivo {
-    background: #f1f5f9;
-    color: #cbd5e1;
+.mes-dot.inactivo { background: #f1f5f9; color: #cbd5e1; }
+.mes-dot.pendiente { 
+    background: #fff1f2; color: #e11d48; border-color: #fecdd3; cursor: pointer; 
+}
+.mes-dot.completado { 
+    background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; cursor: pointer; 
 }
 
-.mes-dot.pendiente {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fca5a5;
-    cursor: pointer;
+.mes-dot.completado.has-date {
+    width: auto; padding: 0 8px; border-radius: 6px; font-size: 0.65rem;
 }
 
-.mes-dot.pendiente:hover {
-    background: #fee2e2;
-    transform: scale(1.12);
-    border-color: #ef4444;
+.mes-dot:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.mes-dot.completado {
-    background: #f0fdf4;
-    color: #16a34a;
-    border-color: #86efac;
-    cursor: pointer;
-}
+/* ── Utilidades ─────────────────────────────────────────── */
+.panel-no-padding .panel-body { padding: 0 !important; }
+.panel-no-padding .table-wrap, 
+.panel-no-padding .preventivo-scroll-wrap { border: none; border-radius: 0; }
 
-.mes-dot.completado:hover {
-    background: #dcfce7;
-    transform: scale(1.12);
-}
-
-.mes-dot.has-date {
-    width: auto;
-    min-width: 32px;
-    padding: 0 6px;
-    border-radius: 8px;
-    font-size: 0.65rem;
-}
-
-/* ══════════════════════════════════════════════════════════
-   TARJETAS DE CONTROL MENSUAL (TAREAS SIMPLES)
-══════════════════════════════════════════════════════════ */
-.tarea-simple-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 22px;
-    border-bottom: 1px solid #f0f4ff;
-    transition: background 0.15s;
-}
-
-.tarea-simple-card:last-child { border-bottom: none; }
-.tarea-simple-card:hover      { background: var(--bg-hover); }
-
-/* Barra lateral de urgencia */
-.tarea-urgencia-bar {
-    width: 4px;
-    height: 40px;
-    border-radius: 99px;
-    flex-shrink: 0;
-}
-
-.urgencia-hoy  { background: #10b981; }
-.urgencia-venc { background: #ef4444; }
-.urgencia-prox { background: var(--accent); }
-
-.tarea-simple-info { flex: 1; min-width: 0; }
-
-.tarea-simple-nombre {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.tarea-simple-fecha {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Badges de estado */
-.tarea-status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 10px;
-    border-radius: 99px;
-    font-size: 0.72rem;
-    font-weight: 600;
-}
-
-.badge-hoy  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-.badge-venc { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-.badge-prox { background: rgba(91, 94, 244, 0.08); color: var(--accent); border: 1px solid rgba(91, 94, 244, 0.2); }
-
-/* Leyenda de urgencia */
-.mant-legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.legend-text {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* ══════════════════════════════════════════════════════════
-   BITÁCORA DE EVIDENCIAS
-══════════════════════════════════════════════════════════ */
+/* ── Bitácora Premium Grid ──────────────────────────────── */
 .bitacora-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
 }
 
 .bitacora-card {
-    background: #ffffff;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius);
+    background: #fff;
+    border-radius: 16px;
     overflow: hidden;
+    border: 1px solid #e2e8f0;
     box-shadow: var(--shadow-sm);
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .bitacora-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
 }
 
 .bitacora-img {
-    width: 100%;
-    height: 180px;
+    width: 100%; height: 200px;
     object-fit: cover;
-    background: var(--bg-dark);
+    cursor: zoom-in;
 }
 
-.bitacora-content { padding: 14px 16px; }
-
-.bitacora-date {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.bitacora-content { padding: 20px; }
+.bitacora-date { 
+    color: var(--accent); font-weight: 700; font-size: 0.8rem; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
 }
 
-.bitacora-desc {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
-}
-
-/* ══════════════════════════════════════════════════════════
-   ESTADO VACÍO
-══════════════════════════════════════════════════════════ */
-.mant-empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-muted);
-}
-
-.mant-empty i {
-    font-size: 2.5rem;
-    opacity: 0.3;
-    margin-bottom: 12px;
-    display: block;
-}
-
-.mant-empty p { font-size: 0.9rem; }
-
-/* ══════════════════════════════════════════════════════════
-   MODAL VISOR DE IMÁGENES (BITÁCORA)
-══════════════════════════════════════════════════════════ */
-.modal-visor-img {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 23, 42, 0.9);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
-}
-
-.modal-visor-img.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.modal-visor-content {
-    position: relative;
-    max-width: 90%;
-    max-height: 90vh;
-    transform: scale(0.95);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.modal-visor-img.active .modal-visor-content {
-    transform: scale(1);
-}
-
-.modal-visor-content img {
-    max-width: 100%;
-    max-height: 85vh;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    border: 3px solid rgba(255,255,255,0.1);
-    object-fit: contain;
-}
-
-.btn-close-visor {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 2rem;
-    cursor: pointer;
-    transition: color 0.2s;
-    line-height: 1;
-}
-
-.btn-close-visor:hover {
-    color: #ef4444;
-}
-
-.bitacora-img {
-    cursor: pointer;
-    transition: filter 0.2s;
-}
-
-.bitacora-img:hover {
-    filter: brightness(0.85);
-}
-
-/* ══════════════════════════════════════════════
-   MANTENIMIENTO PREVENTIVO — PREMIUM STYLES
-   ══════════════════════════════════════════════ */
-
-/* Hero banner */
+/* ── Mantenimiento Preventivo (Hero & Detail) ──────────────── */
 .prev-hero {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
-    border-radius: 16px;
-    padding: 24px 28px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-    box-shadow: 0 8px 32px rgba(79,70,229,0.25);
-}
-
-.prev-hero-text h2 {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
+    padding: 32px;
+    border-radius: 20px;
     color: #fff;
-    font-size: 1.15rem;
-    font-weight: 800;
-    margin: 0 0 4px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
 }
 
-.prev-hero-text p {
-    color: rgba(255,255,255,0.75);
-    font-size: 0.8rem;
-    margin: 0;
-}
-
-/* Month selector inside hero */
-.prev-mes-selector-hero {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.prev-mes-selector-hero label {
-    color: rgba(255,255,255,0.85);
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
+.prev-hero h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+.prev-hero p { opacity: 0.85; font-size: 0.9rem; }
 
 .prev-mes-selector-hero select {
-    padding: 10px 16px;
-    border-radius: 10px;
+    padding: 12px 20px;
+    border-radius: 12px;
     border: 2px solid rgba(255,255,255,0.3);
     background: rgba(255,255,255,0.15);
     color: #fff;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    outline: none;
+    font-weight: 700;
     backdrop-filter: blur(8px);
-    min-width: 180px;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-.prev-mes-selector-hero select option {
-    color: #1e293b;
-    background: #fff;
-}
-
-.prev-mes-selector-hero select:focus {
-    border-color: rgba(255,255,255,0.7);
-    background: rgba(255,255,255,0.25);
-}
-
-/* Add-user card */
-.prev-add-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-}
-
-.prev-add-icon {
-    width: 44px;
-    height: 44px;
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 1rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
-}
-
-.prev-add-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex: 1;
-    flex-wrap: wrap;
-}
-
-.prev-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 140px;
-}
-
-.prev-field label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.prev-field input {
-    padding: 9px 14px;
-    border-radius: 9px;
-    border: 1.5px solid #e2e8f0;
-    background: #f8fafc;
-    color: #1e293b;
-    font-size: 0.82rem;
     outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.prev-field input:focus {
-    border-color: #6366f1;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
-}
-
-.prev-add-btn {
-    padding: 9px 20px;
-    border-radius: 9px;
-    border: none;
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 700;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
-    transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.prev-add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99,102,241,0.45);
-}
-
-.prev-add-btn:active {
-    transform: translateY(0);
-}
-
-/* User list rows — polished */
-.preventivo-table tbody tr {
-    transition: background 0.12s;
-}
-
-.preventivo-table tbody tr:hover {
-    background: #f8f7ff;
-}
-
-/* User avatar circle in JS-rendered rows */
-.prev-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #9333ea);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(99,102,241,0.3);
-    text-transform: uppercase;
-}
-
-/* Week cells in detail panel — more prominent */
-.cell-week {
-    transition: transform 0.12s, box-shadow 0.12s;
-}
-
-.cell-week:hover {
-    transform: scale(1.12);
-    z-index: 1;
-    position: relative;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
-    border-radius: 6px;
-}
-
-/* ══════════════════════════════════════════════════════════
-   MANTENIMIENTO PREVENTIVO (GRILLA ANCHA)
-   ══════════════════════════════════════════════════════════ */
-.preventivo-scroll-wrap {
-    overflow-x: scroll;
-    overflow-y: auto;
-    width: 100%;
-    position: relative;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle);
-    background: #fff;
-    max-height: 65vh;
-}
-
-.preventivo-scroll-wrap::-webkit-scrollbar {
-    height: 10px;
-    width: 6px;
-}
-
-.preventivo-scroll-wrap::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-}
-
-.preventivo-scroll-wrap::-webkit-scrollbar-thumb {
-    background: #94a3b8;
-    border-radius: 10px;
-}
-
-.preventivo-scroll-wrap::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
-}
-
-/* ── Panel de Detalle de Mes ── */
+/* Detail Panel */
 .prev-detail-panel {
     background: #fff;
-    border: 2px solid #6366f1;
-    border-radius: 12px;
-    margin-top: 16px;
-    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
-    animation: slideDownIn 0.2s ease;
+    border-radius: 16px;
+    border: 1px solid #6366f1;
     overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+    animation: slideFadeIn 0.4s ease-out;
 }
 
-@keyframes slideDownIn {
-    from { opacity: 0; transform: translateY(-12px); }
-    to   { opacity: 1; transform: translateY(0); }
+@keyframes slideFadeIn {
+    from { opacity: 0; filter: blur(4px); transform: scale(0.98); }
+    to { opacity: 1; filter: blur(0); transform: scale(1); }
 }
 
 .prev-detail-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    color: #fff;
-}
-
-.prev-detail-header h3 {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-close-detail {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: #fff;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-}
-
-.btn-close-detail:hover {
-    background: rgba(255,255,255,0.4);
-}
-
-.prev-detail-scroll {
-    overflow-x: scroll;
-    overflow-y: auto;
-    max-height: 55vh;
-}
-
-.prev-detail-scroll::-webkit-scrollbar {
-    height: 8px;
-    width: 6px;
-}
-
-.prev-detail-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
-
-.prev-detail-scroll::-webkit-scrollbar-thumb {
-    background: #818cf8;
-    border-radius: 6px;
-}
-
-.prev-detail-scroll::-webkit-scrollbar-thumb:hover {
     background: #6366f1;
+    color: #fff;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
 }
 
 .preventivo-table {
-    width: max-content;
-    border-collapse: collapse;
-    font-size: 0.72rem;
-}
-
-.preventivo-table th, 
-.preventivo-table td {
-    padding: 8px 4px;
-    border: 1px solid #e2e8f0;
-    text-align: center;
-    min-width: 38px;
-}
-
-/* Columnas fijas (Sticky) */
-.preventivo-table th:nth-child(1), .preventivo-table td:nth-child(1),
-.preventivo-table th:nth-child(2), .preventivo-table td:nth-child(2),
-.preventivo-table th:nth-child(3), .preventivo-table td:nth-child(3) {
-    position: sticky;
-    left: 0;
-    background: #fff;
-    z-index: 10;
-    text-align: left;
-    min-width: 110px;
-    padding-left: 12px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.03);
-}
-
-.preventivo-table th:nth-child(2), .preventivo-table td:nth-child(2) { left: 110px; }
-.preventivo-table th:nth-child(3), .preventivo-table td:nth-child(3) { left: 220px; min-width: 140px; }
-
-.preventivo-table thead th {
-    background: #f8fafc;
-    color: var(--text-muted);
-    font-weight: 700;
-}
-
-.preventivo-table thead tr:first-child th {
-    background: #f1f5f9;
-    color: var(--text-primary);
-    font-size: 0.8rem;
-    padding: 12px;
-}
-
-/* Estados de celdas */
-.cell-week {
-    cursor: pointer;
-    transition: all 0.2s;
-    user-select: none;
-}
-
-.cell-week:hover { filter: brightness(0.9); transform: scale(1.05); }
-
-.res-real     { background: #22c55e !important; color: #fff !important; } /* Verde */
-.res-fallo    { background: #ef4444 !important; color: #fff !important; } /* Rojo */
-.res-medio    { background: #f59e0b !important; color: #fff !important; } /* Amarillo */
-
-/* Leyenda */
-.preventivo-legend {
-    display: flex;
-    gap: 20px;
-    padding: 14px 22px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.leg-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.box {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    display: inline-block;
-}
-
-.box.res-real  { background: #22c55e; }
-.box.res-fallo { background: #ef4444; }
-.box.res-medio { background: #f59e0b; }
-
-/* Sticky helper classes */
-.th-sticky {
-    position: sticky;
-    background: #f1f5f9;
-    z-index: 12;
-    font-weight: 700;
-    font-size: 0.72rem;
-    text-align: left;
-    padding-left: 10px;
-    border: 1px solid #e2e8f0;
-}
-
-.td-sticky {
-    position: sticky;
-    background: #fff;
-    z-index: 5;
-    border: 1px solid #e2e8f0;
-    padding: 6px 8px;
-}
-
-/* Month header toggle button */
-.th-mes-header {
-    background: #f1f5f9;
-    cursor: pointer;
-    border: 1px solid #e2e8f0;
-    padding: 0;
-    text-align: center;
-    font-size: 0.72rem;
-}
-
-.th-mes-header.mes-collapsed {
-    background: #e0e7ff;
-    min-width: 36px !important;
-    width: 36px !important;
-}
-
-.btn-mes-toggle {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #475569;
-    padding: 8px 6px;
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
+    border-collapse: collapse;
 }
 
-.btn-mes-toggle:hover {
-    background: #dbeafe;
-    color: #1d4ed8;
-    border-radius: 4px;
-}
-
-/* Collapsed summary cell */
-.cell-mes-resumen {
-    min-width: 36px !important;
-    width: 36px !important;
-    font-size: 0.65rem;
-    cursor: default;
-}
-
-/* Make collapsed class headers have right-arrow icon style */
-.th-sem-resumen {
+.preventivo-table th {
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    font-size: 0.6rem;
-    color: #94a3b8;
-    min-width: 36px !important;
-    width: 36px !important;
+    padding: 14px 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
     text-align: center;
+}
+
+.preventivo-table td {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Sidebar Specific Polish */
+#nav-links-tareas li.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .view-section { padding: 16px; }
+    .prev-hero { flex-direction: column; text-align: center; gap: 20px; }
+    .mant-tarea-nombre { flex: 1; }
+    .mant-meses-row { display: none; } /* Hide on mobile if too crowded */
 }

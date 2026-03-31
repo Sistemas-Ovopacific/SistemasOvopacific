@@ -23,27 +23,78 @@ const MainApp = {
         this.inicializarEventos();
         this.inicializarLogin();
         
-        // Mostrar perfil en sidebar
-        const currentUser = sessionStorage.getItem('inv_currentUser');
-        const currentName = sessionStorage.getItem('inv_currentName') || currentUser;
+        // Verificar sesión persistente
+        const session = api.getSession();
         
-        if (currentUser) {
-            const userBox = document.getElementById('sidebar-user');
-            if (userBox) {
-                userBox.style.display = 'flex';
-                document.getElementById('user-name-display').textContent = currentName;
-                document.getElementById('user-initial').textContent = currentName.charAt(0).toUpperCase();
+        if (session) {
+            // Ocultar login y mostrar portal directamente
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('landing-portal').style.display = 'flex';
+            document.getElementById('landing-portal').style.opacity = '1';
+            
+            this.actualizarUIUsuario(session);
+            this.checkPermissions();
+            this.cargarTodosLosDatos();
+        } else {
+            // Mostrar login
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('landing-portal').style.display = 'none';
+        }
+    },
+
+    actualizarUIUsuario(session) {
+        const currentName = session.nombre || session.usuario;
+        const userBox = document.getElementById('sidebar-user');
+        if (userBox) {
+            userBox.style.display = 'flex';
+            document.getElementById('user-name-display').textContent = currentName;
+            document.getElementById('user-initial').textContent = currentName.charAt(0).toUpperCase();
+            
+            // Etiqueta de rol
+            const roleBadge = document.getElementById('user-role-badge');
+            if (roleBadge) {
+                const role = (session.rol || 'usuario').toLowerCase();
+                roleBadge.textContent = session.rol || 'Usuario';
+                roleBadge.className = 'role-badge ' + role;
             }
         }
+    },
+
+    checkPermissions() {
+        const session = api.getSession();
+        if (!session) return;
+
+        const isVisualizer = session.rol === 'visualizador';
         
-        this.cargarTodosLosDatos();
+        // Deshabilitar botones de escritura si es visualizador
+        const writeButtons = document.querySelectorAll('.btn-primary, .prev-add-btn, button[type="submit"]');
+        writeButtons.forEach(btn => {
+            if (isVisualizer) {
+                btn.style.display = 'none'; // Ocultar para evitar tentación
+            } else {
+                btn.style.display = '';
+            }
+        });
+
+        // Ocultar formularios si es visualizador
+        const forms = document.querySelectorAll('form');
+        forms.forEach(f => {
+            if (isVisualizer && f.id !== 'login-form') {
+                const parentPanel = f.closest('.panel');
+                if (parentPanel && parentPanel.classList.contains('mant-add-panel')) {
+                    parentPanel.style.display = 'none';
+                } else {
+                    f.style.display = 'none';
+                }
+            } else {
+                f.style.display = '';
+            }
+        });
     },
 
     logout() {
         if (confirm('¿Cerrar sesión?')) {
-            sessionStorage.removeItem('inv_currentUser');
-            sessionStorage.removeItem('inv_currentName');
-            location.reload();
+            api.logout();
         }
     },
 
@@ -69,20 +120,8 @@ const MainApp = {
             try {
                 const res = await api.login(user, pass);
                 if (res.success) {
-                    // Guardar sesión
-                    sessionStorage.setItem('inv_currentUser', res.usuario);
-                    if (res.nombre) {
-                        sessionStorage.setItem('inv_currentName', res.nombre);
-                    } else {
-                        sessionStorage.removeItem('inv_currentName');
-                    }
-                    
-                    const currentName = res.nombre || res.usuario;
-                    const userBox = document.getElementById('sidebar-user');
-                    if (userBox) {
-                        document.getElementById('user-name-display').textContent = currentName;
-                        document.getElementById('user-initial').textContent = currentName.charAt(0).toUpperCase();
-                    }
+                    this.actualizarUIUsuario(res);
+                    this.checkPermissions();
                     
                     // Ocultar login y mostrar portal
                     const loginScreen = document.getElementById('login-screen');
@@ -99,7 +138,6 @@ const MainApp = {
                         }
                     }, 500);
 
-                    // Recargar datos para aplicar filtros de usuario
                     this.cargarTodosLosDatos();
                 }
             } catch (err) {
@@ -125,6 +163,14 @@ const MainApp = {
         });
     },
 
+    /**
+     * Maneja el cambio de usuario seleccionado para el rol visualizador.
+     */
+    handleVisualizerUserChange(modulo, usuario) {
+        this.state[`selectedUser_${modulo}`] = usuario;
+        this.actualizarUI();
+    },
+
     setMode(mode) {
         this.state.moduloActual = mode;
         const logoText = document.getElementById('sidebar-logo-text');
@@ -132,7 +178,8 @@ const MainApp = {
         const searchWrap = document.querySelector('.search-wrap');
 
         // Garantizar que el perfil de usuario siga visible siempre que haya sesión
-        const currentUser = sessionStorage.getItem('inv_currentUser');
+        const session = api.getSession();
+        const currentUser = session.usuario;
         if (currentUser) {
             const userBox = document.getElementById('sidebar-user');
             if (userBox) userBox.style.display = 'flex';
@@ -220,8 +267,8 @@ const MainApp = {
         const titles = {
             'recurrentes': ['Mantenimiento Mensual', 'Programación de actividades fijas por mes'],
             'semanales': ['Seguimiento Semanal', 'Actividades de rutina de Lunes a Viernes'],
-            'preventivo': ['Plan Preventivo', 'Control de mantenimiento por equipo'],
-            'usuarios': ['Equipos Registrados', 'Administración de usuarios y equipos del sistema'],
+            'preventivo': ['Plan Preventivo', 'Seguimiento de mantenimiento por equipo'],
+            'usuarios': ['Responsables de Mantenimiento', 'Gestión del personal y equipos asignados'],
             'bitacora': ['Bitácora de Evidencias', 'Registro fotográfico de actividades realizadas']
         };
 
@@ -245,12 +292,13 @@ const MainApp = {
         ui.setConexionStatus('connecting');
 
         try {
-            const [prods, ents, sals, entregas, tareasData] = await Promise.all([
+            const [prods, ents, sals, entregas, tareasData, usuarios] = await Promise.all([
                 api.get('getProductos'),
                 api.get('getEntradas'),
                 api.get('getSalidas'),
                 api.get('getEntregas').catch(err => { console.error('[GET Entregas Failed]', err); return []; }), 
-                api.get('getTareasData').catch(err => { console.error('[GET TareasData Failed]', err); return {}; })
+                api.get('getTareasData').catch(err => { console.error('[GET TareasData Failed]', err); return {}; }),
+                api.get('getUsuarios').catch(err => { console.error('[GET Usuarios Failed]', err); return []; })
             ]);
 
             this.state.productos = Array.isArray(prods) ? prods : (prods && prods.error ? [] : prods);
@@ -269,6 +317,7 @@ const MainApp = {
             this.state.planPreventivo = Array.isArray(pPrev) ? pPrev : [];
             this.state.bitacora = Array.isArray(bit) ? bit : [];
             this.state.inicioTareas = Array.isArray(tS) ? tS : [];
+            this.state.usuariosAdmin = Array.isArray(usuarios) ? usuarios : [];
 
             ui.setConexionStatus('ok');
             this.actualizarUI();
@@ -285,6 +334,7 @@ const MainApp = {
         const { vistaActual, productos, entradas, salidas, chartInstance } = this.state;
         ui.actualizarMiniStats(productos);
         ui.llenarSelectsProductos(productos);
+        ui.llenarSelectsEquipos(productos);
 
         const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
         if (enModuloTareas) {
@@ -294,9 +344,15 @@ const MainApp = {
             ui.renderizarBitacora(this.state.bitacora);
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
-        if (vistaActual === 'entradas') ui.renderizarEntradas(entradas);
-        if (vistaActual === 'salidas') ui.renderizarSalidas(salidas);
         if (vistaActual === 'entregas') ui.renderizarEntregas(this.state.entregas);
+        
+        if (vistaActual === 'tareas-semanales' || this.state.moduloActual === 'tareas') {
+            const filterFecha = document.getElementById('filter-semanal-fecha');
+            const fechaVal = filterFecha ? filterFecha.value : null;
+            ui.renderizarTareasSemanales(this.state.tareasSemanales, fechaVal);
+        }
+
+        if (vistaActual === 'usuarios') ui.renderizarResponsables(this.state.planPreventivo);
         if (vistaActual === 'grafica') {
             this.state.chartInstance = ui.renderizarGrafica(productos, chartInstance);
         }
@@ -333,6 +389,22 @@ const MainApp = {
 
         // Botones Generales
         document.getElementById('btn-refresh').addEventListener('click', () => this.cargarTodosLosDatos());
+        
+        // Filtro Fecha Semanal
+        const filterSemanalFecha = document.getElementById('filter-semanal-fecha');
+        if (filterSemanalFecha) {
+            filterSemanalFecha.addEventListener('change', () => {
+                ui.renderizarTareasSemanales(this.state.tareasSemanales, filterSemanalFecha.value);
+            });
+        }
+        const btnClearSemanal = document.getElementById('btn-clear-semanal-filter');
+        if (btnClearSemanal) {
+            btnClearSemanal.addEventListener('click', () => {
+                if (filterSemanalFecha) filterSemanalFecha.value = '';
+                ui.renderizarTareasSemanales(this.state.tareasSemanales);
+            });
+        }
+
         document.getElementById('btn-export-inv').addEventListener('click', () => {
             if (this.state.moduloActual === 'tareas') {
                 if (this.state.tabTareasActual === 'bitacora') {
@@ -717,31 +789,52 @@ const MainApp = {
         document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora'    ? 'block' : 'none';
     },
 
-    // ── ACCIONES MANTENIMIENTO PREVENTIVO ──
+    // ── ACCIONES RESPONSABLES DE MANTENIMIENTO ──
     async registrarUsuarioPreventivo() {
         const area = document.getElementById('prev-area').value.trim();
         const nombre = document.getElementById('prev-nombre').value.trim();
-        const correo = document.getElementById('prev-correo').value.trim();
-        if (!area || !nombre) return;
+        const equipo = document.getElementById('prev-equipo').value;
+        if (!area || !nombre || !equipo) {
+            utils.mostrarToast('Complete todos los campos', 'warning');
+            return;
+        }
 
+        const session = api.getSession();
         const nueva = {
             id: 'PREV-' + Date.now().toString(),
             Area: area,
             Usuario: nombre,
-            Correo: correo || 'N/A',
+            Equipo: equipo,
             SemanasComp: '{}',
-            UltimaMod: new Date().toISOString()
+            UsuarioSistema: session.usuario || 'Admin'
         };
 
-        utils.mostrarLoader('Registrando...');
+        utils.mostrarLoader('Registrando responsable...');
         try {
-            await api.post({ action: 'guardarUsuarioPreventivo', registro: nueva });
-            utils.mostrarToast('Registro añadido', 'success');
+            await api.post({ action: 'addUsuarioPreventivo', ...nueva });
             this.state.planPreventivo.push(nueva);
+            this.actualizarUI();
             document.getElementById('form-preventivo-usuario').reset();
-            ui.renderizarPlanPreventivo(this.state.planPreventivo);
+            utils.mostrarToast('Responsable registrado correctamente', 'success');
         } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
+            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarResponsable(id) {
+        if (!confirm('¿Desea eliminar a este responsable? Se eliminarán todos sus registros de mantenimiento.')) return;
+        
+        utils.mostrarLoader('Eliminando responsable...');
+        try {
+            await api.post({ action: 'deleteUsuarioPreventivo', id });
+            
+            this.state.planPreventivo = this.state.planPreventivo.filter(r => String(r.id) !== String(id));
+            this.actualizarUI();
+            utils.mostrarToast('Responsable eliminado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
         } finally {
             utils.ocultarLoader();
         }
@@ -754,7 +847,6 @@ const MainApp = {
         let comp = {};
         try { comp = JSON.parse(registro.SemanasComp || '{}'); } catch(e){ comp = {}; }
         
-        // Ciclo: null -> realizado -> fallo -> medio -> null
         const actual = comp[semId];
         let nuevo = null;
         if (!actual) nuevo = 'realizado';
@@ -762,34 +854,19 @@ const MainApp = {
         else if (actual === 'fallo') nuevo = 'medio';
         else nuevo = null;
 
-        // Get current month from semId (M1W2 -> mes = 1)
         const mesActual = parseInt(semId.match(/M(\d+)W/)[1]);
 
         utils.mostrarLoader('Actualizando...');
         try {
-            await api.post({ action: 'toggleSemanaPreventivo', id, semId, estado: nuevo });
-            
             if (nuevo) comp[semId] = nuevo;
             else delete comp[semId];
-            
-            registro.SemanasComp = JSON.stringify(comp);
-            ui.renderizarPlanPreventivo(this.state.planPreventivo);
-            // Re-open the detail panel for the same month
-            ui.abrirDetalleMes(mesActual);
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
 
-    async eliminarUsuarioPreventivo(id) {
-        if (!confirm('¿Eliminar este usuario del plan preventivo?')) return;
-        utils.mostrarLoader('Eliminando...');
-        try {
-            await api.post({ action: 'eliminarUsuarioPreventivo', id });
-            this.state.planPreventivo = this.state.planPreventivo.filter(r => String(r.id) !== String(id));
+            const nuevaComp = JSON.stringify(comp);
+            await api.post({ action: 'updatePlanPreventivo', id: id, SemanasComp: nuevaComp });
+            
+            registro.SemanasComp = nuevaComp;
             ui.renderizarPlanPreventivo(this.state.planPreventivo);
+            ui.abrirDetalleMes(mesActual);
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
@@ -801,13 +878,21 @@ const MainApp = {
     async registrarTareaSemanal() {
         const nombre = document.getElementById('ts-nombre').value.trim();
         const categoria = document.getElementById('ts-categoria').value.trim() || 'General';
-        if (!nombre) return;
+        const fecha = document.getElementById('ts-fecha').value;
+        const equipo = document.getElementById('ts-equipo').value;
+        if (!nombre || !fecha) {
+            utils.mostrarToast('Actividad y Fecha son obligatorias', 'warning');
+            return;
+        }
 
-        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+        const session = api.getSession();
+        const usr = session.usuario || 'Admin';
         const nueva = { 
             id: 'TS-' + Date.now().toString(), 
             Nombre: nombre, 
             Categoria: categoria, 
+            Equipo: equipo || 'General',
+            Fecha: fecha,
             DiasComp: "[]", 
             ÚltimaMod: new Date().toISOString(),
             Usuario: usr 
@@ -815,7 +900,7 @@ const MainApp = {
         
         utils.mostrarLoader('Guardando tarea semanal...');
         try {
-            const res = await api.post({ action: 'guardarTareaSemanal', tarea: nueva });
+            const res = await api.post({ action: 'addTareaSemanal', tarea: nueva });
             utils.mostrarToast(res.mensaje || 'Tarea semanal guardada', 'success');
             
             this.state.tareasSemanales.push(nueva);
@@ -852,7 +937,7 @@ const MainApp = {
 
         utils.mostrarLoader('Actualizando...');
         try {
-            const res = await api.post({ action: 'toggleDiaTarea', id: idTarea, dia: diaNum, fecha: fecha });
+            const res = await api.post({ action: 'updateTareaSemanal', id: idTarea, data: { DiasComp: JSON.stringify(compObj) } });
             utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
 
             if (fecha) compObj[diaNum] = fecha;
@@ -871,7 +956,7 @@ const MainApp = {
         if (!confirm('¿Eliminar esta tarea semanal?')) return;
         utils.mostrarLoader('Eliminando tarea...');
         try {
-            await api.post({ action: 'eliminarTareaSemanal', id });
+            await api.post({ action: 'deleteTareaSemanal', id });
             utils.mostrarToast('Tarea eliminada', 'success');
             this.state.tareasSemanales = this.state.tareasSemanales.filter(t => String(t.id) !== String(id));
             ui.renderizarTareasSemanales(this.state.tareasSemanales);
@@ -901,7 +986,8 @@ const MainApp = {
             return;
         }
 
-        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+        const session = api.getSession();
+        const usr = session.usuario || 'Admin';
         const nueva = { 
             id: 'TR-' + Date.now().toString(), 
             Nombre: nombre, 
@@ -914,7 +1000,7 @@ const MainApp = {
         
         utils.mostrarLoader('Guardando configuración...');
         try {
-            const res = await api.post({ action: 'guardarTareaRecurrente', tarea: nueva });
+            const res = await api.post({ action: 'addTareaRecurrente', tarea: nueva });
             utils.mostrarToast(res.mensaje || 'Programación Anual guardada', 'success');
             
             this.state.tareasRecurrentes.push(nueva);
@@ -936,11 +1022,7 @@ const MainApp = {
 
         utils.mostrarLoader('Actualizando estado...');
         try {
-            const res = await api.post({ action: 'toggleMesTarea', id: idTarea, mes: mesNum });
-            if (res.error) throw new Error(res.error);
-            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
-
-            // Actualizar localmente (sin esperar a recargar)
+            // Actualizar localmente y sincronizar con backend
             let comp = [];
             try { comp = JSON.parse(tarea.MesesComp || '[]').map(Number); } catch (e) { comp = []; }
             if (comp.includes(mesNum)) {
@@ -948,7 +1030,13 @@ const MainApp = {
             } else {
                 comp.push(mesNum);
             }
-            tarea.MesesComp = JSON.stringify(comp);
+            const nuevaComp = JSON.stringify(comp);
+            
+            const res = await api.post({ action: 'updateTareaRecurrente', id: idTarea, data: { MesesComp: nuevaComp } });
+            if (res.error) throw new Error(res.error);
+            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
+
+            tarea.MesesComp = nuevaComp;
 
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
         } catch (err) {
@@ -962,7 +1050,7 @@ const MainApp = {
         if (!confirm('¿Eliminar por completo esta programación anual?')) return;
         utils.mostrarLoader('Eliminando programación...');
         try {
-            await api.post({ action: 'eliminarTareaRecurrente', id });
+            await api.post({ action: 'deleteTareaRecurrente', id });
             utils.mostrarToast('Programación eliminada', 'success');
             this.state.tareasRecurrentes = this.state.tareasRecurrentes.filter(t => String(t.id) !== String(id));
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
@@ -1006,7 +1094,8 @@ const MainApp = {
         try {
             // Leer y comprimir la imagen localmente
             const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
-            const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+            const session = api.getSession();
+            const usr = session.usuario || 'Admin';
             const payload = { 
                 id: Date.now().toString(), 
                 Fecha: fecha, 
@@ -1016,7 +1105,7 @@ const MainApp = {
             };
             
             utils.mostrarLoader('Subiendo evidencia...');
-            const res = await api.post({ action: 'registrarBitacora', bitacora: payload });
+            const res = await api.post({ action: 'addBitacora', ...payload });
             utils.mostrarToast(res.mensaje || 'Registro completado', 'success');
             
             this.state.bitacora.unshift(payload); // Meter primero para que salga arriba

@@ -170,14 +170,14 @@
             // Vórtice terminado → desaparecer boot screen y comenzar partículas
             vortexDone = true;
 
-            bootScreen.style.transition = 'opacity 0.6s ease';
+            bootScreen.style.transition = 'opacity 0.8s ease';
             bootScreen.style.opacity = '0';
             setTimeout(() => {
                 bootScreen.style.display = 'none';
 
                 // Check if user is logged in
-                let currentUser = sessionStorage.getItem('inv_currentUser');
-                if (currentUser === 'undefined' || currentUser === 'null') currentUser = null;
+                const session = api.getSession();
+                const currentUser = session ? session.usuario : null;
                 
                 if (!currentUser) {
                     const loginScreen = document.getElementById('login-screen');

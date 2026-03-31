@@ -18,6 +18,7 @@ const ui = {
         getMantPreventivoTable: () => ({ thead: document.getElementById('thead-preventivo'), tbody: document.getElementById('tbody-preventivo') }),
         getBitacoraGrid: () => document.getElementById('bitacora-grid'),
         getSummaryGrid: () => document.getElementById('summary-grid'),
+        getResponsablesTbody: () => document.getElementById('tbody-responsables'),
     },
 
     /**
@@ -244,17 +245,40 @@ const ui = {
     // ============================================================
 
     /**
-     * Genera dinámicamente los checkboxes (pills) para los 12 meses en el form de recurrentes.
+     * Renderiza un selector de usuarios para el rol visualizador.
      */
-    generarCheckboxesMeses() {
-        const container = document.getElementById('tr-meses-checkboxes');
+    renderizarSelectorVisualizador(containerId, modulo, onchange) {
+        const container = document.getElementById(containerId);
         if (!container) return;
-        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        container.innerHTML = meses.map((m, i) => `
-            <label class="mes-pill-label">
-                <input type="checkbox" class="tr-mes-check" value="${i + 1}"> ${m}
-            </label>
-        `).join('');
+
+        const session = api.getSession();
+        if (session.rol !== 'visualizador') {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+        
+        // Obtener lista única de usuarios de todos los datos de tareas
+        const appState = window.MainApp.state;
+        const allTasks = [
+            ...appState.tareasRecurrentes,
+            ...appState.tareasSemanales,
+            ...appState.planPreventivo,
+            ...appState.bitacora
+        ];
+        const users = [...new Set(allTasks.map(t => t.UsuarioSistema || t.Usuariosistema || '').filter(u => u !== ''))];
+        
+        // Si no hay usuarios en los registros, al menos mostrar el selector vacío o con "Todos"
+        const currentSelected = appState[`selectedUser_${modulo}`] || '';
+
+        container.innerHTML = `
+            <label><i class="fa-solid fa-filter"></i> Ver tareas de:</label>
+            <select onchange="window.MainApp.handleVisualizerUserChange('${modulo}', this.value)">
+                <option value="">— Todos los usuarios —</option>
+                ${users.map(u => `<option value="${u}" ${u === currentSelected ? 'selected' : ''}>${u}</option>`).join('')}
+            </select>
+        `;
     },
 
     renderizarTareasRecurrentes(tareas) {
@@ -263,51 +287,50 @@ const ui = {
         if (yearLabel) yearLabel.textContent = new Date().getFullYear();
 
         const container = this.els.getMantCategoriasContainer();
-        if (!container) {
-            const tbody = this.els.getTareasRecurrentesTbody();
-            if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Sin datos</td></tr>';
-            return;
-        }
+        if (!container) return;
         container.innerHTML = '';
 
+        // Renderizar selector si es visualizador
+        this.renderizarSelectorVisualizador('visualizer-filter-recurrentes', 'recurrentes');
+
         if (!tareas || tareas.length === 0) {
-            container.innerHTML = `
-                <div class="mant-empty">
-                    <i class="fa-solid fa-calendar-days"></i>
-                    <p>No hay actividades programadas. Usa el formulario de arriba para añadir.</p>
-                </div>`;
+            container.innerHTML = `<div class="mant-empty"><i class="fa-solid fa-calendar-days"></i><p>No hay actividades programadas.</p></div>`;
             return;
         }
 
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_recurrentes || '').toLowerCase().trim() : '';
 
-        // Normalizar datos tolerando cambios de nombres en las columnas de Google Sheets
+        // Normalizar y Filtrar
         const tareasNorm = tareas
             .filter(t => {
-                // Para filtrar filas fantasmas, requerimos que la fila tenga al menos 2 celdas con datos
                 const celdasValidas = Object.values(t).filter(v => typeof v !== 'undefined' && String(v).trim() !== '');
                 return celdasValidas.length >= 2;
             })
             .map(t => {
-                const vals = Object.values(t); // Fallback posicional en caso de que cambien las cabeceras
+                const vals = Object.values(t);
                 return {
                     ...t,
-                    id:        String(t.id ?? t.ID ?? vals[0] ?? ''),
-                    Nombre:    String(t.Nombre || t.nombre || t.Actividad || vals[1] || 'Sin nombre'),
-                    Categoria: String(t.Categoria || t.categoria || t.Tipo || vals[2] || 'General'),
-                    MesesProg: t.MesesProg || t.mesesprog || vals[3] || '[]',
-                    MesesComp: t.MesesComp || t.mesescomp || vals[4] || '[]',
-                    Usuario:   String(t.Usuario || vals[5] || '')
+                    id:             String(t.id ?? t.ID ?? vals[0] ?? ''),
+                    Nombre:         String(t.Nombre || t.nombre || t.Actividad || vals[1] || 'Sin nombre'),
+                    Categoria:      String(t.Categoria || t.categoria || t.Tipo || vals[2] || 'General'),
+                    MesesProg:      t.MesesProg || t.mesesprog || vals[3] || '[]',
+                    MesesComp:      t.MesesComp || t.mesescomp || vals[4] || '[]',
+                    UsuarioSistema: String(t.UsuarioSistema || t.Usuariosistema || t.Usuario || vals[5] || '')
                 };
             })
             .filter(t => {
-                const tUsr = t.Usuario.toLowerCase().trim();
-                const isAdmin = usr === 'admin' || usr === 'administrador';
-                return isAdmin || tUsr === '' || tUsr === usr; // Mostrar tareas propias, heredadas o todas para admin
+                const tUsr = t.UsuarioSistema.toLowerCase().trim();
+                if (isAdmin) return true;
+                if (isVisualizer) {
+                    return selectedUsr === '' || tUsr === selectedUsr;
+                }
+                return tUsr === '' || tUsr === usr; // Operativo ve sus tareas o heredadas
             });
             
-        console.log('[MANT] Tareas a renderizar:', tareasNorm);
 
         if (tareasNorm.length === 0) {
             container.innerHTML = `
@@ -416,46 +439,38 @@ const ui = {
         });
     },
 
-    renderizarTareasSemanales(tareas) {
+    renderizarTareasSemanales(tareas, filtroFechaValue = null) {
         const container = this.els.getMantSemanalContainer();
         if (!container) return;
         container.innerHTML = '';
 
-        if (!tareas || tareas.length === 0) {
-            container.innerHTML = `
-                <div class="mant-empty">
-                    <i class="fa-solid fa-calendar-week"></i>
-                    <p>No hay tareas semanales registradas.</p>
-                </div>`;
-            return;
+        // Renderizar selector si es visualizador
+        this.renderizarSelectorVisualizador('visualizer-filter-semanales', 'semanales');
+
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_semanales || '').toLowerCase().trim() : '';
+
+        // Filtrar por usuario/rol
+        let filtrado = tareas.filter(t => {
+            const tUsr = String(t.UsuarioSistema || t.Usuariosistema || t.UsuarioSist || '').toLowerCase().trim();
+            if (isAdmin) return true;
+            if (isVisualizer) return selectedUsr === '' || tUsr === selectedUsr;
+            return tUsr === '' || tUsr === usr;
+        });
+
+        // Filtrar por fecha si se proporciona
+        if (filtroFechaValue) {
+            filtrado = filtrado.filter(t => {
+                const tFecha = t.Fecha ? t.Fecha.split('T')[0] : '';
+                return tFecha === filtroFechaValue;
+            });
         }
 
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
-        const isAdmin = usr === 'admin' || usr === 'administrador';
-
-        const tareasNorm = tareas
-            .filter(t => {
-                const celdasValidas = Object.values(t).filter(v => v !== undefined && String(v).trim() !== '');
-                return celdasValidas.length >= 2;
-            })
-            .map(t => {
-                const vals = Object.values(t);
-                return {
-                    ...t,
-                    id:        String(t.id || t.ID || vals[0] || ''),
-                    Nombre:    String(t.Nombre || t.nombre || vals[1] || 'Sin nombre'),
-                    Categoria: String(t.Categoria || t.categoria || vals[2] || 'General'),
-                    DiasComp:  t.DiasComp || t.diascomp || vals[3] || '[]',
-                    Usuario:   String(t.Usuario || vals[5] || '')
-                };
-            })
-            .filter(t => {
-                const tUsr = t.Usuario.toLowerCase().trim();
-                return isAdmin || tUsr === '' || tUsr === usr;
-            });
-
-        if (tareasNorm.length === 0) {
-            container.innerHTML = `<div class="mant-empty"><p>No hay tareas para mostrar.</p></div>`;
+        if (filtrado.length === 0) {
+            container.innerHTML = `<div class="mant-empty"><i class="fa-solid fa-calendar-week"></i><p>No hay tareas semanales registradas${filtroFechaValue ? ' para esta fecha' : ''}.</p></div>`;
             return;
         }
 
@@ -469,8 +484,8 @@ const ui = {
         const defaultStyle = { color: '#64748b', icon: 'fa-wrench' };
 
         const grupos = {};
-        tareasNorm.forEach(t => {
-            const cat = t.Categoria;
+        filtrado.forEach(t => {
+            const cat = t.Categoria || 'General';
             if (!grupos[cat]) grupos[cat] = [];
             grupos[cat].push(t);
         });
@@ -506,8 +521,15 @@ const ui = {
 
                 const row = document.createElement('div');
                 row.className = 'mant-tarea-row';
+                const eqText = t.Equipo ? `<div style="font-size:0.75rem; color:#64748b; margin-top:2px;"><i class="fa-solid fa-laptop"></i> ${utils.escHtml(t.Equipo)}</div>` : '';
+                const fechaText = t.Fecha ? `<div style="font-size:0.7rem; color:#94a3b8;"><i class="fa-regular fa-calendar"></i> ${t.Fecha.split('T')[0]}</div>` : '';
+
                 row.innerHTML = `
-                    <div class="mant-tarea-nombre" title="${utils.escAttr(t.Nombre)}">${utils.escHtml(t.Nombre)}</div>
+                    <div class="mant-tarea-nombre-wrap">
+                        <div class="mant-tarea-nombre" title="${utils.escAttr(t.Nombre)}">${utils.escHtml(t.Nombre)}</div>
+                        ${eqText}
+                        ${fechaText}
+                    </div>
                     <div class="mant-meses-row">${dotsHtml}</div>
                     <div class="mant-tarea-actions">
                         <button class="action-btn del" onclick="MainApp.eliminarTareaSemanal('${utils.escAttr(String(t.id))}')" title="Eliminar">
@@ -522,10 +544,6 @@ const ui = {
         });
     },
 
-    /**
-     * Mantenimiento Preventivo — Lista de Usuarios/Equipos
-     * Esta función puebla la tabla en la sección de 'Usuarios Registrados'.
-     */
     renderizarPlanPreventivo(plan) {
         const { thead, tbody } = this.els.getMantPreventivoTable();
         if (!thead || !tbody) return;
@@ -533,6 +551,9 @@ const ui = {
         thead.innerHTML = '';
         tbody.innerHTML = '';
         this.cerrarDetalleMes();
+
+        // Renderizar selector si es visualizador
+        this.renderizarSelectorVisualizador('visualizer-filter-preventivo', 'preventivo');
 
         // Header
         thead.innerHTML = `
@@ -545,32 +566,51 @@ const ui = {
         `;
 
         if (!plan || plan.length === 0) {
-            tbody.innerHTML = `
-                <tr><td colspan="4" style="padding:48px; text-align:center;">
-                    <div style="opacity:0.25; font-size:2.5rem; margin-bottom:10px;">🖥️</div>
-                    <div style="color:#94a3b8; font-size:0.88rem; font-weight:600;">Aún no hay equipos registrados</div>
-                    <div style="color:#cbd5e1; font-size:0.78rem; margin-top:4px;">Agrega el primer equipo usando el formulario de arriba</div>
-                </td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No hay equipos registrados</td></tr>`;
             return;
         }
 
-        plan.forEach(reg => {
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_preventivo || '').toLowerCase().trim() : '';
+
+        const filtrado = plan.filter(reg => {
+            const tUsr = String(reg.UsuarioSistema || reg.Usuariosistema || reg.UsuarioSist || '').toLowerCase().trim();
+            if (isAdmin) return true;
+            if (isVisualizer) {
+                return selectedUsr === '' || tUsr === selectedUsr;
+            }
+            return tUsr === '' || tUsr === usr;
+        });
+
+        if (filtrado.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No hay registros para mostrar</td></tr>`;
+            return;
+        }
+
+        filtrado.forEach(reg => {
             const initials = (reg.Usuario || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
             const tr = document.createElement('tr');
+            const equipoTxt = reg.Equipo ? `<div style="font-size:0.7rem; color:#64748b; margin-top:2px;"><i class="fa-solid fa-laptop"></i> ${utils.escHtml(reg.Equipo)}</div>` : '';
             tr.innerHTML = `
                 <td style="width:52px; padding:10px; text-align:center;">
                     <div class="prev-avatar">${initials}</div>
                 </td>
                 <td style="text-align:left; padding:10px 12px;">
                     <div style="font-weight:700; font-size:0.85rem; color:#1e293b;">${utils.escHtml(reg.Usuario)}</div>
+                    ${equipoTxt}
                 </td>
                 <td style="text-align:left; padding:10px 12px;">
                     <span style="background:#ede9fe; color:#6d28d9; border-radius:20px; padding:3px 10px; font-size:0.72rem; font-weight:700;">${utils.escHtml(reg.Area)}</span>
                 </td>
                 <td style="width:44px; padding:8px; text-align:center;">
-                    <button class="btn-icon" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" style="color:#ef4444; opacity:0.6;" title="Eliminar">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
+                    <div class="action-btns">
+                        <button class="action-btn del" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -579,11 +619,11 @@ const ui = {
 
     /**
      * Mantenimiento Preventivo — Panel de Seguimiento Mensual
-     * Abre un panel flotante para marcar el progreso semanal de un mes específico.
      * @param {number} mes - Número del mes (1-12)
      */
     abrirDetalleMes(mes) {
-        const plan = window.MainApp && MainApp.state ? MainApp.state.planPreventivo : [];
+        const appState = window.MainApp && MainApp.state ? MainApp.state : {};
+        const plan = appState.planPreventivo || [];
         const panel = document.getElementById('preventivo-detail-panel');
         const title = document.getElementById('prev-detail-title');
         const thead = document.getElementById('thead-prev-detail');
@@ -596,12 +636,8 @@ const ui = {
         title.innerHTML = `<i class="fa-solid fa-calendar-days"></i> Detalle — ${mesNombre}`;
         panel.style.display = 'block';
 
-        // Sync the month selector dropdown
         const sel = document.getElementById('prev-mes-select');
         if (sel) sel.value = mes;
-
-        // Scroll panel into view
-        setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 
         // Header
         thead.innerHTML = `
@@ -615,13 +651,29 @@ const ui = {
             </tr>
         `;
 
-        // Body
         tbody.innerHTML = '';
-        if (!plan || plan.length === 0) {
+
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (appState.selectedUser_preventivo || '').toLowerCase().trim() : '';
+
+        const filtrado = plan.filter(reg => {
+            const tUsr = String(reg.UsuarioSistema || reg.Usuariosistema || reg.UsuarioSist || '').toLowerCase().trim();
+            if (isAdmin) return true;
+            if (isVisualizer) {
+                return selectedUsr === '' || tUsr === selectedUsr;
+            }
+            return tUsr === '' || tUsr === usr;
+        });
+
+        if (filtrado.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; color:#94a3b8; text-align:center;">Sin registros.</td></tr>`;
             return;
         }
-        plan.forEach(reg => {
+
+        filtrado.forEach(reg => {
             let comp = {};
             try { comp = JSON.parse(reg.SemanasComp || '{}'); } catch(e){}
             const tr = document.createElement('tr');
@@ -653,18 +705,29 @@ const ui = {
         if (!container) return;
         container.innerHTML = '';
 
-        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
-        const isAdmin = usr === 'admin' || usr === 'administrador';
+        // Renderizar selector si es visualizador
+        this.renderizarSelectorVisualizador('visualizer-filter-bitacora', 'bitacora');
+
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_bitacora || '').toLowerCase().trim() : '';
+
         const misRegistros = registros.filter(b => {
-            const bUsr = String(b.Usuario || Object.values(b)[4] || '').toLowerCase().trim();
-            return isAdmin || bUsr === '' || bUsr === usr;
+            const bUsr = String(b.UsuarioSistema || b.Usuariosistema || b.Usuario || '').toLowerCase().trim();
+            if (isAdmin) return true;
+            if (isVisualizer) {
+                return selectedUsr === '' || bUsr === selectedUsr;
+            }
+            return bUsr === '' || bUsr === usr;
         });
 
         if (!misRegistros || misRegistros.length === 0) {
             container.innerHTML = `
                 <div class="mant-empty" style="grid-column:1/-1;">
                     <i class="fa-solid fa-images"></i>
-                    <p>No hay evidencias registradas todavía.</p>
+                    <p>No hay evidencias para mostrar.</p>
                 </div>`;
             return;
         }
@@ -769,6 +832,49 @@ const ui = {
         this.renderizarInventario(productos);
     },
 
+    llenarSelectsEquipos(productos) {
+        const selects = ['ts-equipo', 'prev-equipo'];
+        selects.forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const prev = sel.value;
+            sel.innerHTML = `<option value="">-- Seleccionar Equipo --</option>`;
+            
+            // Ordenar por nombre
+            const sorted = [...productos].sort((a,b) => (a.Nombre||'').localeCompare(b.Nombre||''));
+            
+            sorted.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.Nombre || p.ID;
+                opt.textContent = `${p.Nombre} (${p.ID})`;
+                sel.appendChild(opt);
+            });
+            if (prev) sel.value = prev;
+        });
+    },
+
+    generarCheckboxesMeses() {
+        const container = document.getElementById('tr-meses-checkboxes');
+        if (!container) return;
+        
+        const meses = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        
+        container.innerHTML = '';
+        meses.forEach((mes, idx) => {
+            const num = idx + 1;
+            const item = document.createElement('div');
+            item.className = 'tr-mes-item';
+            item.innerHTML = `
+                <input type="checkbox" id="tr-mes-${num}" class="tr-mes-check" value="${num}">
+                <label for="tr-mes-${num}">${mes}</label>
+            `;
+            container.appendChild(item);
+        });
+    },
+
     llenarSelectsProductos(productos) {
         ['entrada-producto', 'salida-producto'].forEach(selId => {
             const sel = document.getElementById(selId);
@@ -782,6 +888,41 @@ const ui = {
                 sel.appendChild(opt);
             });
             if (prev && productos.some(p => String(p.ID) === prev)) sel.value = prev;
+        });
+    },
+
+    renderizarResponsables(responsables) {
+        const tbody = this.els.getResponsablesTbody();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (!responsables || responsables.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay responsables registrados.</td></tr>';
+            return;
+        }
+
+        responsables.forEach(u => {
+            const initials = (u.Usuario || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding:12px; font-weight:500; color:var(--primary-color);">${utils.escHtml(u.Area || 'Gral')}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="prev-avatar" style="width:30px; height:30px; font-size:0.75rem;">${initials}</div>
+                        <strong>${utils.escHtml(u.Usuario)}</strong>
+                    </div>
+                </td>
+                <td>
+                    <i class="fa-solid fa-laptop" style="opacity:0.5; margin-right:5px;"></i>
+                    ${utils.escHtml(u.Equipo || 'N/A')}
+                </td>
+                <td>
+                    <button class="action-btn del" onclick="MainApp.eliminarResponsable('${utils.escAttr(u.id)}')" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
     }
 };
