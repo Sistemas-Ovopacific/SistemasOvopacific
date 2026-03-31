@@ -260,6 +260,9 @@
                         onclick="MainApp.switchTareasTab('recurrentes')">
                         <i class="fa-solid fa-calendar-days"></i> Tareas Mensuales
                     </button>
+                    <button class="tareas-tab-btn" data-tab="semanales" onclick="MainApp.switchTareasTab('semanales')">
+                        <i class="fa-solid fa-calendar-week"></i> Tareas Semanales
+                    </button>
                     <button class="tareas-tab-btn" data-tab="bitacora" onclick="MainApp.switchTareasTab('bitacora')">
                         <i class="fa-solid fa-camera"></i> Bitácora
                     </button>
@@ -321,6 +324,52 @@
                     </div>
 
                 </div><!-- /tab-tareas-recurrentes -->
+                
+                <!-- ──────────────────────────────────────────
+                     TAB 2: TAREAS SEMANALES (LUN-VIE)
+                ────────────────────────────────────────── -->
+                <div id="tab-tareas-semanales" style="display:none;">
+                    <div class="panel mant-add-panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-plus-circle"></i> Nueva Tarea Semanal (Lunes-Viernes)</h2>
+                        </div>
+                        <div class="panel-body">
+                            <form id="form-tarea-semanal" class="mant-form">
+                                <div class="form-group">
+                                    <label for="ts-nombre">Actividad Semanal</label>
+                                    <input type="text" id="ts-nombre" placeholder="Ej: Revisión diaria de backups, Control de clima..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ts-categoria">Categoría</label>
+                                    <input type="text" id="ts-categoria" list="categorias-list" placeholder="Ej: Datacenter, General..." required>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa-solid fa-save"></i> Crear Tarea Semanal
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-calendar-week"></i> Seguimiento Semanal (L-V)</h2>
+                            <div class="dias-header-labels" style="display:flex; gap:10px; font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                                <span style="width:30px; text-align:center;">Lun</span>
+                                <span style="width:30px; text-align:center;">Mar</span>
+                                <span style="width:30px; text-align:center;">Mie</span>
+                                <span style="width:30px; text-align:center;">Jue</span>
+                                <span style="width:30px; text-align:center;">Vie</span>
+                            </div>
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            <div id="mant-semanal-container">
+                                <!-- Generado por JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /tab-tareas-semanales -->
 
 
                 <!-- ──────────────────────────────────────────

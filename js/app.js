@@ -10,6 +10,7 @@ const MainApp = {
         salidas: [],
         entregas: [],
         tareasRecurrentes: [],
+        tareasSemanales: [],
         bitacora: [],
         chartInstance: null,
         vistaActual: '', // Se setea por el portal
@@ -165,6 +166,8 @@ const MainApp = {
             
             // Re-renderizar con los datos ya cargados
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+            ui.renderizarTareasSemanales(this.state.tareasSemanales);
+            ui.renderizarInicioTareas(this.state.inicioTareas);
             ui.renderizarBitacora(this.state.bitacora);
         }
     },
@@ -194,35 +197,28 @@ const MainApp = {
         ui.setConexionStatus('connecting');
 
         try {
-            const [p, e, s, t, tS, tR, b] = await Promise.all([
+            const [prods, ents, sals, entregas, tareasData] = await Promise.all([
                 api.get('getProductos'),
                 api.get('getEntradas'),
                 api.get('getSalidas'),
                 api.get('getEntregas').catch(err => { console.error('[GET Entregas Failed]', err); return []; }), 
-                api.get('getTareas').catch(err => { console.error('[GET Tareas Failed]', err); return []; }), 
-                api.get('getTareasRecurrentes').catch(err => { console.error('[GET TareasRecurrentes Failed]', err); return []; }), 
-                api.get('getBitacora').catch(err => { console.error('[GET Bitacora Failed]', err); return []; }) 
+                api.get('getTareasData').catch(err => { console.error('[GET TareasData Failed]', err); return {}; })
             ]);
 
-            if (p.error) throw new Error(p.error);
-            if (e.error) throw new Error(e.error);
-            if (s.error) throw new Error(s.error);
-
-            if (tR && tR.error) {
-                console.error('[Backend Error en TareasRecurrentes]:', tR.error);
-                utils.mostrarToast('Error cargando Tareas: ' + tR.error, 'danger');
-            }
-            if (tS && tS.error) console.error('[Backend Error en Tareas Simples]:', tS.error);
-            if (b && b.error) console.error('[Backend Error en Bitacora]:', b.error);
-
-            this.state.productos = Array.isArray(p) ? p : [];
-            this.state.entradas = Array.isArray(e) ? e : [];
-            this.state.salidas = Array.isArray(s) ? s : [];
-            this.state.entregas = Array.isArray(t) ? t : (t && t.error ? [] : t);
+            this.state.productos = Array.isArray(prods) ? prods : (prods && prods.error ? [] : prods);
+            this.state.entradas = Array.isArray(ents) ? ents : (ents && ents.error ? [] : ents);
+            this.state.salidas = Array.isArray(sals) ? sals : (sals && sals.error ? [] : sals);
+            this.state.entregas = Array.isArray(entregas) ? entregas : (entregas && entregas.error ? [] : entregas);
             
-            this.state.inicioTareas = Array.isArray(tS) ? tS : (tS && tS.error ? [] : tS);
-            this.state.tareasRecurrentes = Array.isArray(tR) ? tR : (tR && tR.error ? [] : tR);
-            this.state.bitacora = Array.isArray(b) ? b : (b && b.error ? [] : b);
+            const tRec = tareasData.tareasRecurrentes || [];
+            const tSem = tareasData.tareasSemanales || [];
+            const bit = tareasData.bitacora || [];
+            const tS = tareasData.inicioTareas || [];
+
+            this.state.tareasRecurrentes = Array.isArray(tRec) ? tRec : [];
+            this.state.tareasSemanales = Array.isArray(tSem) ? tSem : [];
+            this.state.bitacora = Array.isArray(bit) ? bit : [];
+            this.state.inicioTareas = Array.isArray(tS) ? tS : [];
 
             ui.setConexionStatus('ok');
             this.actualizarUI();
@@ -243,6 +239,7 @@ const MainApp = {
         const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
         if (enModuloTareas) {
             ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
+            ui.renderizarTareasSemanales(this.state.tareasSemanales);
             ui.renderizarBitacora(this.state.bitacora);
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
@@ -380,6 +377,14 @@ const MainApp = {
             formRecurrente.addEventListener('submit', e => {
                 e.preventDefault();
                 this.registrarTareaRecurrente();
+            });
+        }
+
+        const formSemanal = document.getElementById('form-tarea-semanal');
+        if (formSemanal) {
+            formSemanal.addEventListener('submit', e => {
+                e.preventDefault();
+                this.registrarTareaSemanal();
             });
         }
 
@@ -648,7 +653,81 @@ const MainApp = {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
         document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
+        document.getElementById('tab-tareas-semanales').style.display   = tabId === 'semanales' ? 'block' : 'none';
         document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora' ? 'block' : 'none';
+    },
+
+    // ── ACCIONES TAREAS SEMANALES ──
+    async registrarTareaSemanal() {
+        const nombre = document.getElementById('ts-nombre').value.trim();
+        const categoria = document.getElementById('ts-categoria').value.trim() || 'General';
+        if (!nombre) return;
+
+        const usr = sessionStorage.getItem('inv_currentUser') || 'Admin';
+        const nueva = { 
+            id: 'TS-' + Date.now().toString(), 
+            Nombre: nombre, 
+            Categoria: categoria, 
+            DiasComp: "[]", 
+            ÚltimaMod: new Date().toISOString(),
+            Usuario: usr 
+        };
+        
+        utils.mostrarLoader('Guardando tarea semanal...');
+        try {
+            const res = await api.post({ action: 'guardarTareaSemanal', tarea: nueva });
+            utils.mostrarToast(res.mensaje || 'Tarea semanal guardada', 'success');
+            
+            this.state.tareasSemanales.push(nueva);
+            document.getElementById('form-tarea-semanal').reset();
+            ui.renderizarTareasSemanales(this.state.tareasSemanales);
+        } catch (err) {
+            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async toggleDiaTarea(idTarea, dia) {
+        const diaNum = Number(dia);
+        const tarea = this.state.tareasSemanales.find(t => String(t.id) === String(idTarea));
+        if (!tarea) return;
+
+        utils.mostrarLoader('Actualizando...');
+        try {
+            const res = await api.post({ action: 'toggleDiaTarea', id: idTarea, dia: diaNum });
+            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
+
+            let comp = [];
+            try { comp = JSON.parse(tarea.DiasComp || '[]').map(Number); } catch (e) { comp = []; }
+            if (comp.includes(diaNum)) {
+                comp = comp.filter(d => d !== diaNum);
+            } else {
+                comp.push(diaNum);
+            }
+            tarea.DiasComp = JSON.stringify(comp);
+
+            ui.renderizarTareasSemanales(this.state.tareasSemanales);
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarTareaSemanal(id) {
+        if (!confirm('¿Eliminar esta tarea semanal?')) return;
+        utils.mostrarLoader('Eliminando tarea...');
+        try {
+            await api.post({ action: 'eliminarTareaSemanal', id });
+            utils.mostrarToast('Tarea eliminada', 'success');
+            this.state.tareasSemanales = this.state.tareasSemanales.filter(t => String(t.id) !== String(id));
+            ui.renderizarTareasSemanales(this.state.tareasSemanales);
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
     },
 
     // ── ACCIONES TAREAS RECURRENTES ──

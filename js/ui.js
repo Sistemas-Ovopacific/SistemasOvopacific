@@ -14,6 +14,7 @@ const ui = {
         getInicioInventarioTbody: () => document.getElementById('inicio-inventario-tbody'),
         getTareasRecurrentesTbody: () => document.getElementById('tareas-recurrentes-tbody'),
         getMantCategoriasContainer: () => document.getElementById('mant-categorias-container'),
+        getMantSemanalContainer: () => document.getElementById('mant-semanal-container'),
         getBitacoraGrid: () => document.getElementById('bitacora-grid'),
         getSummaryGrid: () => document.getElementById('summary-grid'),
     },
@@ -396,6 +397,109 @@ const ui = {
                     <div class="mant-meses-row">${dotsHtml}</div>
                     <div class="mant-tarea-actions">
                         <button class="action-btn del" onclick="MainApp.eliminarTareaRecurrente('${utils.escAttr(String(t.id))}')" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                block.appendChild(row);
+            });
+
+            container.appendChild(block);
+        });
+    },
+
+    renderizarTareasSemanales(tareas) {
+        const container = this.els.getMantSemanalContainer();
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!tareas || tareas.length === 0) {
+            container.innerHTML = `
+                <div class="mant-empty">
+                    <i class="fa-solid fa-calendar-week"></i>
+                    <p>No hay tareas semanales registradas.</p>
+                </div>`;
+            return;
+        }
+
+        const usr = (sessionStorage.getItem('inv_currentUser') || '').toLowerCase().trim();
+        const isAdmin = usr === 'admin' || usr === 'administrador';
+
+        const tareasNorm = tareas
+            .filter(t => {
+                const celdasValidas = Object.values(t).filter(v => v !== undefined && String(v).trim() !== '');
+                return celdasValidas.length >= 2;
+            })
+            .map(t => {
+                const vals = Object.values(t);
+                return {
+                    ...t,
+                    id:        String(t.id || t.ID || vals[0] || ''),
+                    Nombre:    String(t.Nombre || t.nombre || vals[1] || 'Sin nombre'),
+                    Categoria: String(t.Categoria || t.categoria || vals[2] || 'General'),
+                    DiasComp:  t.DiasComp || t.diascomp || vals[3] || '[]',
+                    Usuario:   String(t.Usuario || vals[5] || '')
+                };
+            })
+            .filter(t => {
+                const tUsr = t.Usuario.toLowerCase().trim();
+                return isAdmin || tUsr === '' || tUsr === usr;
+            });
+
+        if (tareasNorm.length === 0) {
+            container.innerHTML = `<div class="mant-empty"><p>No hay tareas para mostrar.</p></div>`;
+            return;
+        }
+
+        const catStyles = {
+            'Computadoras y Laptops':  { color: '#5b5ef4', icon: 'fa-laptop' },
+            'Datacenter 1 y 2':        { color: '#0ea5e9', icon: 'fa-server' },
+            'Cámaras de seguridad':    { color: '#f59e0b', icon: 'fa-camera' },
+            'Red y Comunicaciones':    { color: '#10b981', icon: 'fa-network-wired' },
+            'General':                 { color: '#94a3b8', icon: 'fa-gear' }
+        };
+        const defaultStyle = { color: '#64748b', icon: 'fa-wrench' };
+
+        const grupos = {};
+        tareasNorm.forEach(t => {
+            const cat = t.Categoria;
+            if (!grupos[cat]) grupos[cat] = [];
+            grupos[cat].push(t);
+        });
+
+        const diasLabels = ['L','M','X','J','V'];
+
+        Object.entries(grupos).forEach(([catNombre, listaTareas]) => {
+            const style = catStyles[catNombre] || defaultStyle;
+            const block = document.createElement('div');
+            block.className = 'mant-categoria-block';
+            block.innerHTML = `
+                <div class="mant-categoria-header">
+                    <div class="mant-cat-icon" style="background:${style.color};">
+                        <i class="fa-solid ${style.icon}"></i>
+                    </div>
+                    <span class="mant-cat-title">${utils.escHtml(catNombre)}</span>
+                </div>
+            `;
+
+            listaTareas.forEach(t => {
+                let comp = [];
+                try { comp = JSON.parse(t.DiasComp || '[]'); } catch(e){}
+
+                const dotsHtml = [1,2,3,4,5].map((diaNum, idx) => {
+                    const estaComp = comp.includes(diaNum);
+                    const clase = estaComp ? 'completado' : 'pendiente';
+                    const label = diasLabels[idx];
+                    return `<div class="mes-dot ${clase}" onclick="MainApp.toggleDiaTarea('${utils.escAttr(String(t.id))}', ${diaNum})" title="${label}">${label}</div>`;
+                }).join('');
+
+                const row = document.createElement('div');
+                row.className = 'mant-tarea-row';
+                row.innerHTML = `
+                    <div class="mant-tarea-nombre" title="${utils.escAttr(t.Nombre)}">${utils.escHtml(t.Nombre)}</div>
+                    <div class="mant-meses-row">${dotsHtml}</div>
+                    <div class="mant-tarea-actions">
+                        <button class="action-btn del" onclick="MainApp.eliminarTareaSemanal('${utils.escAttr(String(t.id))}')" title="Eliminar">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
