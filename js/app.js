@@ -689,24 +689,36 @@ const MainApp = {
     },
 
     async toggleDiaTarea(idTarea, dia) {
-        const diaNum = Number(dia);
+        const diaNum = String(dia);
         const tarea = this.state.tareasSemanales.find(t => String(t.id) === String(idTarea));
         if (!tarea) return;
 
+        let compObj = {};
+        try { compObj = JSON.parse(tarea.DiasComp || '{}'); } catch(e){ compObj = {}; }
+        
+        let fecha = '';
+        if (compObj[diaNum]) {
+            if (!confirm(`Ya tiene la fecha "${compObj[diaNum]}". ¿Desea borrarla o cambiarla?`)) return;
+            const nueva = prompt("Nueva fecha (ej: 31/03) o dejar vacío para borrar:", compObj[diaNum]);
+            if (nueva === null) return;
+            fecha = nueva.trim();
+        } else {
+            const hoy = new Date();
+            const sugerencia = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}`;
+            const nueva = prompt("Ingrese la fecha de realización (ej: 31/03):", sugerencia);
+            if (!nueva) return;
+            fecha = nueva.trim();
+        }
+
         utils.mostrarLoader('Actualizando...');
         try {
-            const res = await api.post({ action: 'toggleDiaTarea', id: idTarea, dia: diaNum });
+            const res = await api.post({ action: 'toggleDiaTarea', id: idTarea, dia: diaNum, fecha: fecha });
             utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
 
-            let comp = [];
-            try { comp = JSON.parse(tarea.DiasComp || '[]').map(Number); } catch (e) { comp = []; }
-            if (comp.includes(diaNum)) {
-                comp = comp.filter(d => d !== diaNum);
-            } else {
-                comp.push(diaNum);
-            }
-            tarea.DiasComp = JSON.stringify(comp);
-
+            if (fecha) compObj[diaNum] = fecha;
+            else delete compObj[diaNum];
+            
+            tarea.DiasComp = JSON.stringify(compObj);
             ui.renderizarTareasSemanales(this.state.tareasSemanales);
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');

@@ -483,14 +483,17 @@ const ui = {
             `;
 
             listaTareas.forEach(t => {
-                let comp = [];
-                try { comp = JSON.parse(t.DiasComp || '[]'); } catch(e){}
+                let compObj = {};
+                try { compObj = JSON.parse(t.DiasComp || '{}'); } catch(e){ compObj = {}; }
 
                 const dotsHtml = [1,2,3,4,5].map((diaNum, idx) => {
-                    const estaComp = comp.includes(diaNum);
-                    const clase = estaComp ? 'completado' : 'pendiente';
-                    const label = diasLabels[idx];
-                    return `<div class="mes-dot ${clase}" onclick="MainApp.toggleDiaTarea('${utils.escAttr(String(t.id))}', ${diaNum})" title="${label}">${label}</div>`;
+                    const diaKey = String(diaNum);
+                    const fecha = compObj[diaKey];
+                    const estaComp = !!fecha;
+                    const clase = estaComp ? 'completado has-date' : 'pendiente';
+                    const label = estaComp ? fecha : diasLabels[idx];
+                    
+                    return `<div class="mes-dot ${clase}" onclick="MainApp.toggleDiaTarea('${utils.escAttr(String(t.id))}', ${diaNum})" title="${diasLabels[idx]}">${label}</div>`;
                 }).join('');
 
                 const row = document.createElement('div');
