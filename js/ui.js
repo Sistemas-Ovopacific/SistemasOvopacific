@@ -515,82 +515,40 @@ const ui = {
         });
     },
 
-    // ── MANTENIMIENTO PREVENTIVO (GRILLA COMPACTA + PANEL DE DETALLE) ──
+    // ── MANTENIMIENTO PREVENTIVO (LISTA SIMPLE + PANEL DE MES) ──
     renderizarPlanPreventivo(plan) {
         const { thead, tbody } = this.els.getMantPreventivoTable();
         if (!thead || !tbody) return;
 
         thead.innerHTML = '';
         tbody.innerHTML = '';
-
-        // Close the detail panel on re-render
         this.cerrarDetalleMes();
 
-        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Sep','Oct','Nov','Dic'];
-
-        // ── Fila 1: columnas fijas + mes (siempre 1 columna por mes) ──
-        const trMeses = document.createElement('tr');
-        trMeses.innerHTML = `
-            <th rowspan="2" class="th-sticky" style="left:0; z-index:16; width:44px; min-width:44px;"></th>
-            <th rowspan="2" class="th-sticky" style="left:44px; z-index:16; min-width:120px;">Área</th>
-            <th rowspan="2" class="th-sticky" style="left:164px; z-index:16; min-width:160px;">Usuario / Equipo</th>
+        // Simple header: only Área and Usuario
+        thead.innerHTML = `
+            <tr>
+                <th style="width:44px; min-width:44px;"></th>
+                <th style="min-width:130px; text-align:left; padding-left:12px;">Área</th>
+                <th style="min-width:180px; text-align:left; padding-left:12px;">Usuario / Equipo</th>
+            </tr>
         `;
-        for (let m = 1; m <= 12; m++) {
-            const th = document.createElement('th');
-            th.className = 'th-mes-header';
-            th.innerHTML = `
-                <button class="btn-mes-toggle" onclick="ui.abrirDetalleMes(${m})" title="Ver detalle de ${meses[m-1]}">
-                    ${meses[m-1]}
-                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.55rem; margin-left:4px;"></i>
-                </button>
-            `;
-            trMeses.appendChild(th);
-        }
-        thead.appendChild(trMeses);
 
-        // ── Fila 2: sub-header debajo de cada mes (muestra el total/4) ──
-        const trSub = document.createElement('tr');
-        for (let m = 1; m <= 12; m++) {
-            const th = document.createElement('th');
-            th.className = 'th-sem-resumen';
-            th.textContent = '✓/4';
-            th.style.fontSize = '0.6rem';
-            trSub.appendChild(th);
-        }
-        thead.appendChild(trSub);
-
-        // ── Cuerpo ──
         if (!plan || plan.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="15" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-table-cells" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros en el plan preventivo.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" style="padding:40px; color:#94a3b8; text-align:center;"><i class="fa-solid fa-users" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:12px;"></i>No hay registros. Agrega un equipo o usuario arriba.</td></tr>`;
             return;
         }
 
         plan.forEach(reg => {
-            let comp = {};
-            try { comp = JSON.parse(reg.SemanasComp || '{}'); } catch(e){}
-
             const tr = document.createElement('tr');
-            let html = `
-                <td class="td-sticky" style="left:0; width:44px; min-width:44px;">
+            tr.innerHTML = `
+                <td style="width:44px; text-align:center;">
                     <button class="btn-icon" onclick="MainApp.eliminarUsuarioPreventivo('${utils.escAttr(String(reg.id))}')" style="color:#ef4444;" title="Eliminar">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
-                <td class="td-sticky" style="left:44px; min-width:120px; font-size:0.78rem;">${utils.escHtml(reg.Area)}</td>
-                <td class="td-sticky" style="left:164px; min-width:160px;"><strong style="font-size:0.78rem;">${utils.escHtml(reg.Usuario)}</strong></td>
+                <td style="font-size:0.8rem; text-align:left; padding-left:12px;">${utils.escHtml(reg.Area)}</td>
+                <td style="text-align:left; padding-left:12px;"><strong style="font-size:0.8rem;">${utils.escHtml(reg.Usuario)}</strong></td>
             `;
-
-            // One summary cell per month
-            for (let m = 1; m <= 12; m++) {
-                let cnt = 0;
-                for (let w = 1; w <= 4; w++) {
-                    if (comp[`M${m}W${w}`] === 'realizado') cnt++;
-                }
-                const hasFallo = [1,2,3,4].some(w => comp[`M${m}W${w}`] === 'fallo');
-                const cls = cnt === 4 ? 'res-real' : (hasFallo ? 'res-fallo' : cnt > 0 ? 'res-medio' : '');
-                html += `<td class="cell-week ${cls}" style="font-weight:700; font-size:0.72rem; cursor:pointer;" onclick="ui.abrirDetalleMes(${m})" title="Ver ${meses[m-1]}">${cnt}/4</td>`;
-            }
-            tr.innerHTML = html;
             tbody.appendChild(tr);
         });
     },
@@ -610,13 +568,17 @@ const ui = {
         title.innerHTML = `<i class="fa-solid fa-calendar-days"></i> Detalle — ${mesNombre}`;
         panel.style.display = 'block';
 
+        // Sync the month selector dropdown
+        const sel = document.getElementById('prev-mes-select');
+        if (sel) sel.value = mes;
+
         // Scroll panel into view
         setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 
         // Header
         thead.innerHTML = `
             <tr>
-                <th class="th-sticky" style="left:0; z-index:16; min-width:120px;">\u00c1rea</th>
+                <th class="th-sticky" style="left:0; z-index:16; min-width:120px;">Área</th>
                 <th class="th-sticky" style="left:120px; z-index:16; min-width:160px;">Usuario</th>
                 <th>Semana 1</th>
                 <th>Semana 2</th>

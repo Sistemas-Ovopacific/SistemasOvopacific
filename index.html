@@ -401,12 +401,34 @@
                     </div>
 
                     <div class="panel">
-                        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                             <h2><i class="fa-solid fa-table-cells"></i> Seguimiento de Mantenimiento Preventivo</h2>
-                            <div class="preventivo-legend">
-                                <span class="leg-item"><span class="box res-real"></span> Realizadas</span>
-                                <span class="leg-item"><span class="box res-fallo"></span> No Realizadas</span>
-                                <span class="leg-item"><span class="box res-medio"></span> Medio</span>
+                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                <!-- Selector de mes -->
+                                <div class="prev-mes-selector">
+                                    <label for="prev-mes-select"><i class="fa-solid fa-calendar-days"></i> Ver mes:</label>
+                                    <select id="prev-mes-select" onchange="ui.abrirDetalleMes(parseInt(this.value))">
+                                        <option value="">— Seleccionar mes —</option>
+                                        <option value="1">Enero</option>
+                                        <option value="2">Febrero</option>
+                                        <option value="3">Marzo</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5">Mayo</option>
+                                        <option value="6">Junio</option>
+                                        <option value="7">Julio</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <!-- Leyenda -->
+                                <div class="preventivo-legend">
+                                    <span class="leg-item"><span class="box res-real"></span> Realizadas</span>
+                                    <span class="leg-item"><span class="box res-fallo"></span> No Realizadas</span>
+                                    <span class="leg-item"><span class="box res-medio"></span> Medio</span>
+                                </div>
                             </div>
                         </div>
                         <div class="panel-body" style="padding:0;">
