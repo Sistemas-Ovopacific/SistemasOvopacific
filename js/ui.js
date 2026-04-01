@@ -265,9 +265,10 @@ const ui = {
             ...appState.tareasRecurrentes,
             ...appState.tareasSemanales,
             ...appState.planPreventivo,
-            ...appState.bitacora
+            ...appState.bitacora,
+            ...appState.planPreventivo // Responsables también están aquí
         ];
-        const users = [...new Set(allTasks.map(t => t.UsuarioSistema || t.Usuariosistema || '').filter(u => u !== ''))];
+        const users = [...new Set(allTasks.map(t => t.UsuarioSistema || t.Usuariosistema || t.UsuarioSist || '').filter(u => u !== ''))];
         
         // Si no hay usuarios en los registros, al menos mostrar el selector vacío o con "Todos"
         const currentSelected = appState[`selectedUser_${modulo}`] || '';
@@ -915,14 +916,38 @@ const ui = {
         if (!tbody) return;
         tbody.innerHTML = '';
         
-        if (!responsables || responsables.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay responsables registrados.</td></tr>';
+        // Renderizar selector si es visualizador
+        this.renderizarSelectorVisualizador('visualizer-filter-responsables', 'responsables');
+
+        const session = api.getSession();
+        const usr = (session.usuario || '').toLowerCase().trim();
+        const isAdmin = session.rol === 'admin';
+        const isVisualizer = session.rol === 'visualizador';
+        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_responsables || '').toLowerCase().trim() : '';
+
+        const filtrado = responsables.filter(u => {
+            const uUsr = String(u.UsuarioSistema || u.Usuariosistema || u.UsuarioSist || '').toLowerCase().trim();
+            if (isAdmin) return true;
+            if (isVisualizer) return selectedUsr === '' || uUsr === selectedUsr;
+            return uUsr === '' || uUsr === usr;
+        });
+
+        if (!filtrado || filtrado.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay responsables para mostrar.</td></tr>';
             return;
         }
 
-        responsables.forEach(u => {
+        filtrado.forEach(u => {
             const initials = (u.Usuario || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
             const tr = document.createElement('tr');
+            
+            // Ocultar botón borrar para visualizadores
+            const actionBtn = isVisualizer ? '' : `
+                <button class="action-btn del" onclick="MainApp.eliminarResponsable('${utils.escAttr(u.id)}')" title="Eliminar">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            `;
+
             tr.innerHTML = `
                 <td style="padding:12px; font-weight:500; color:var(--primary-color);">${utils.escHtml(u.Area || 'Gral')}</td>
                 <td>
@@ -936,9 +961,7 @@ const ui = {
                     ${utils.escHtml(u.Equipo || 'N/A')}
                 </td>
                 <td>
-                    <button class="action-btn del" onclick="MainApp.eliminarResponsable('${utils.escAttr(u.id)}')" title="Eliminar">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    ${actionBtn}
                 </td>
             `;
             tbody.appendChild(tr);

@@ -67,7 +67,7 @@ const MainApp = {
         const isVisualizer = session.rol === 'visualizador';
         
         // Deshabilitar botones de escritura si es visualizador
-        const writeButtons = document.querySelectorAll('.btn-primary, .prev-add-btn, button[type="submit"]');
+        const writeButtons = document.querySelectorAll('.btn-primary, .prev-add-btn, button[type="submit"], .action-btn.del, .action-btn.edit');
         writeButtons.forEach(btn => {
             if (isVisualizer) {
                 btn.style.display = 'none'; // Ocultar para evitar tentación
