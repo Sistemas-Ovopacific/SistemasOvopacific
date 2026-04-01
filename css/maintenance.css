@@ -292,6 +292,35 @@
     border-bottom: 1px solid #f1f5f9;
 }
 
+/* ── Estados Dinámicos en Celdas ── */
+.cell-week {
+    transition: all 0.2s ease;
+    text-align: center;
+    color: transparent; /* Ocultamos el ícono si no queremos texto */
+    position: relative;
+    border: 1px solid #f1f5f9;
+}
+
+.cell-week:hover {
+    background: rgba(99, 102, 241, 0.05);
+    transform: scale(0.95);
+}
+
+.cell-week.res-realizado {
+    background-color: #22c55e !important;
+    color: #fff !important;
+}
+
+.cell-week.res-fallo {
+    background-color: #ef4444 !important;
+    color: #fff !important;
+}
+
+.cell-week.res-medio {
+    background-color: #eab308 !important;
+    color: #fff !important;
+}
+
 /* Sidebar Specific Polish */
 #nav-links-tareas li.active {
     background: rgba(99, 102, 241, 0.1);

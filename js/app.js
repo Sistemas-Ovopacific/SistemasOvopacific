@@ -849,10 +849,10 @@ const MainApp = {
         
         const actual = comp[semId];
         let nuevo = null;
-        if (!actual) nuevo = 'realizado';
-        else if (actual === 'realizado') nuevo = 'fallo';
-        else if (actual === 'fallo') nuevo = 'medio';
-        else nuevo = null;
+        if (!actual) nuevo = 'realizado'; // Verde
+        else if (actual === 'realizado') nuevo = 'fallo'; // Rojo
+        else if (actual === 'fallo') nuevo = 'medio';   // Amarillo
+        else nuevo = null; // Volver a vacío
 
         const mesActual = parseInt(semId.match(/M(\d+)W/)[1]);
 

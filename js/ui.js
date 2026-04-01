@@ -685,12 +685,31 @@ const ui = {
                 const semId = `M${mes}W${w}`;
                 const estado = comp[semId];
                 const clash = estado ? `res-${estado}` : '';
-                const icon = estado === 'realizado' ? '✓' : (estado === 'fallo' ? '✕' : (estado === 'medio' ? '•' : ''));
-                html += `<td class="cell-week ${clash}" style="min-width:80px; font-size:0.85rem; cursor:pointer;" onclick="MainApp.toggleSemanaPreventivo('${utils.escAttr(String(reg.id))}', '${semId}')" title="S${w}">${icon}</td>`;
+                // Usamos iniciales discretas: C=Completado, N=No hecho, I=Incompleto
+                const label = estado === 'realizado' ? 'C' : (estado === 'fallo' ? 'N' : (estado === 'medio' ? 'I' : ''));
+                html += `<td class="cell-week ${clash}" style="min-width:80px; font-size:0.85rem; cursor:pointer;" onclick="MainApp.toggleSemanaPreventivo('${utils.escAttr(String(reg.id))}', '${semId}')" title="S${w}">${label}</td>`;
             }
             tr.innerHTML = html;
             tbody.appendChild(tr);
         });
+
+        // Agregar Leyenda
+        const legendWrapper = document.getElementById('preventivo-detail-panel');
+        if (legendWrapper) {
+            const existingLegend = legendWrapper.querySelector('.prev-legend');
+            if (existingLegend) existingLegend.remove();
+            
+            const legend = document.createElement('div');
+            legend.className = 'prev-legend';
+            legend.style.cssText = "padding:16px; display:flex; flex-wrap:wrap; gap:20px; font-size:0.75rem; border-top:1px solid #f1f5f9; background:#fff;";
+            legend.innerHTML = `
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; background:#22c55e; border-radius:3px;"></span> <strong>Verde:</strong> Realizado (C)</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:3px;"></span> <strong>Rojo:</strong> No Realizado (N)</div>
+                <div style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; background:#eab308; border-radius:3px;"></span> <strong>Amarillo:</strong> Incompleto (I)</div>
+                <div style="margin-left:auto; color:#94a3b8;">* Haz clic en las celdas para cambiar de estado</div>
+            `;
+            legendWrapper.appendChild(legend);
+        }
     },
 
     // Close the detail panel
