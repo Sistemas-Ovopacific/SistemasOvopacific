@@ -936,13 +936,14 @@ const MainApp = {
 
         utils.mostrarLoader('Actualizando...');
         try {
-            const res = await api.post({ action: 'updateTareaSemanal', id: idTarea, data: { DiasComp: JSON.stringify(compObj) } });
-            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
-
             if (fecha) compObj[diaNum] = fecha;
             else delete compObj[diaNum];
+
+            const nuevaComp = JSON.stringify(compObj);
+            const res = await api.post({ action: 'updateTareaSemanal', id: idTarea, DiasComp: nuevaComp });
+            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
             
-            tarea.DiasComp = JSON.stringify(compObj);
+            tarea.DiasComp = nuevaComp;
             ui.renderizarTareasSemanales(this.state.tareasSemanales);
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');
@@ -1031,7 +1032,7 @@ const MainApp = {
             }
             const nuevaComp = JSON.stringify(comp);
             
-            const res = await api.post({ action: 'updateTareaRecurrente', id: idTarea, data: { MesesComp: nuevaComp } });
+            const res = await api.post({ action: 'updateTareaRecurrente', id: idTarea, MesesComp: nuevaComp });
             if (res.error) throw new Error(res.error);
             utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
 
