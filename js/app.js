@@ -894,13 +894,12 @@ const MainApp = {
             Equipo: equipo || 'General',
             Fecha: fecha,
             DiasComp: "[]", 
-            ÚltimaMod: new Date().toISOString(),
-            Usuario: usr 
+            UsuarioSistema: usr 
         };
         
         utils.mostrarLoader('Guardando tarea semanal...');
         try {
-            const res = await api.post({ action: 'addTareaSemanal', tarea: nueva });
+            const res = await api.post({ action: 'addTareaSemanal', ...nueva });
             utils.mostrarToast(res.mensaje || 'Tarea semanal guardada', 'success');
             
             this.state.tareasSemanales.push(nueva);
@@ -995,12 +994,12 @@ const MainApp = {
             MesesProg: JSON.stringify(mesesProg), 
             MesesComp: "[]", 
             Año: new Date().getFullYear().toString(),
-            Usuario: usr 
+            UsuarioSistema: usr 
         };
         
         utils.mostrarLoader('Guardando configuración...');
         try {
-            const res = await api.post({ action: 'addTareaRecurrente', tarea: nueva });
+            const res = await api.post({ action: 'addTareaRecurrente', ...nueva });
             utils.mostrarToast(res.mensaje || 'Programación Anual guardada', 'success');
             
             this.state.tareasRecurrentes.push(nueva);
