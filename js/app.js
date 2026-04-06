@@ -23,6 +23,9 @@ const MainApp = {
         this.inicializarEventos();
         this.inicializarLogin();
         
+        // Generar checkboxes para tareas mensuales
+        ui.generarCheckboxesMeses();
+        
         // Verificar sesión persistente
         const session = api.getSession();
         
@@ -65,6 +68,18 @@ const MainApp = {
         if (!session) return;
 
         const isVisualizer = session.rol === 'visualizador';
+        const isAdmin = session.rol === 'admin';
+        const isSupervisor = session.rol === 'supervisor';
+        
+        // Ocultar módulo de tareas en el portal principal a usuarios normales
+        const cardTareas = document.getElementById('card-modulo-tareas');
+        if (cardTareas) {
+            if (!isAdmin && !isSupervisor && !isVisualizer) { // Solo administradores, supervisores o visualizadores
+                cardTareas.style.display = 'none';
+            } else {
+                cardTareas.style.display = '';
+            }
+        }
         
         // Deshabilitar botones de escritura si es visualizador
         const writeButtons = document.querySelectorAll('.btn-primary, .prev-add-btn, button[type="submit"], .action-btn.del, .action-btn.edit');
@@ -189,8 +204,10 @@ const MainApp = {
             if (searchWrap) searchWrap.style.display = 'block';
             document.getElementById('nav-menu-inventario').style.display = 'block';
             document.getElementById('nav-menu-tareas').style.display = 'none';
-            const miniStats = document.querySelector('.mini-stats');
-            if (miniStats) miniStats.style.display = 'flex';
+            const miniStatsInv = document.getElementById('mini-stats-inventario');
+            if (miniStatsInv) miniStatsInv.style.display = 'flex';
+            const miniStatsTar = document.getElementById('mini-stats-tareas');
+            if (miniStatsTar) miniStatsTar.style.display = 'none';
             this.cambiarVista('productos');
             
             document.getElementById('page-title').textContent = 'Inventario';
@@ -207,8 +224,10 @@ const MainApp = {
             }
             document.getElementById('nav-menu-inventario').style.display = 'none';
             document.getElementById('nav-menu-tareas').style.display = 'block';
-            const miniStats = document.querySelector('.mini-stats');
-            if (miniStats) miniStats.style.display = 'none';
+            const miniStatsInv = document.getElementById('mini-stats-inventario');
+            if (miniStatsInv) miniStatsInv.style.display = 'none';
+            const miniStatsTar = document.getElementById('mini-stats-tareas');
+            if (miniStatsTar) miniStatsTar.style.display = 'flex';
             
             // Al entrar a tareas, mostramos por defecto la vista Mensual (recurrentes)
             this.switchTareasView('recurrentes');
@@ -220,11 +239,13 @@ const MainApp = {
             if (logoIcon) logoIcon.className = `fa-solid fa-list-check`;
             
             // Re-renderizar con los datos ya cargados
-            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-            ui.renderizarTareasSemanales(this.state.tareasSemanales);
-            ui.renderizarPlanPreventivo(this.state.planPreventivo);
-            ui.renderizarInicioTareas(this.state.inicioTareas);
-            ui.renderizarBitacora(this.state.bitacora);
+            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
+            if (ui.renderizarDashboardTareas) ui.renderizarDashboardTareas(this.state);
+            if (ui.renderizarDashboardTareas) ui.renderizarDashboardTareas(this.state);
+            ui.renderizarResponsables(this.state.usuariosPreventivo || []);
+            ui.renderizarBitacoraV3(this.state.bitacora);
         }
     },
 
@@ -265,6 +286,7 @@ const MainApp = {
         
         // Actualizar títulos según la vista
         const titles = {
+            'dashboard': ['Dashboard de Cumplimiento', 'Indicadores Clave de Rendimiento'],
             'recurrentes': ['Mantenimiento Mensual', 'Programación de actividades fijas por mes'],
             'semanales': ['Seguimiento Semanal', 'Actividades de rutina de Lunes a Viernes'],
             'preventivo': ['Plan Preventivo', 'Seguimiento de mantenimiento por equipo'],
@@ -311,10 +333,12 @@ const MainApp = {
             const pPrev = tareasData.planPreventivo || []; 
             const bit = tareasData.bitacora || [];
             const tS = tareasData.inicioTareas || [];
+            const uPrev = tareasData.usuariosPreventivo || [];
 
             this.state.tareasRecurrentes = Array.isArray(tRec) ? tRec : [];
             this.state.tareasSemanales = Array.isArray(tSem) ? tSem : [];
             this.state.planPreventivo = Array.isArray(pPrev) ? pPrev : [];
+            this.state.usuariosPreventivo = Array.isArray(uPrev) ? uPrev : [];
             this.state.bitacora = Array.isArray(bit) ? bit : [];
             this.state.inicioTareas = Array.isArray(tS) ? tS : [];
             this.state.usuariosAdmin = Array.isArray(usuarios) ? usuarios : [];
@@ -338,21 +362,22 @@ const MainApp = {
 
         const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
         if (enModuloTareas) {
-            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-            ui.renderizarTareasSemanales(this.state.tareasSemanales);
-            ui.renderizarPlanPreventivo(this.state.planPreventivo);
-            ui.renderizarBitacora(this.state.bitacora);
+            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
+            ui.renderizarBitacoraV3(this.state.bitacora);
+            ui.actualizarMiniStatsTareas(this.state);
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
         if (vistaActual === 'entregas') ui.renderizarEntregas(this.state.entregas);
         
         if (vistaActual === 'tareas-semanales' || this.state.moduloActual === 'tareas') {
-            const filterFecha = document.getElementById('filter-semanal-fecha');
-            const fechaVal = filterFecha ? filterFecha.value : null;
-            ui.renderizarTareasSemanales(this.state.tareasSemanales, fechaVal);
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
         }
 
-        if (vistaActual === 'usuarios') ui.renderizarResponsables(this.state.planPreventivo);
+        if (vistaActual === 'usuarios') {
+            // Ya no hay render de responsables V1, ignorar
+        }
         if (vistaActual === 'grafica') {
             this.state.chartInstance = ui.renderizarGrafica(productos, chartInstance);
         }
@@ -390,20 +415,27 @@ const MainApp = {
         // Botones Generales
         document.getElementById('btn-refresh').addEventListener('click', () => this.cargarTodosLosDatos());
         
-        // Filtro Fecha Semanal
-        const filterSemanalFecha = document.getElementById('filter-semanal-fecha');
-        if (filterSemanalFecha) {
-            filterSemanalFecha.addEventListener('change', () => {
-                ui.renderizarTareasSemanales(this.state.tareasSemanales, filterSemanalFecha.value);
-            });
-        }
-        const btnClearSemanal = document.getElementById('btn-clear-semanal-filter');
-        if (btnClearSemanal) {
-            btnClearSemanal.addEventListener('click', () => {
-                if (filterSemanalFecha) filterSemanalFecha.value = '';
-                ui.renderizarTareasSemanales(this.state.tareasSemanales);
-            });
-        }
+        // Filtros Módulo de Tareas V3
+        ['filter-tm-mes', 'filter-tm-estado'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', () => ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes));
+        });
+
+        ['filter-ts-semana', 'filter-ts-date', 'filter-ts-estado'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => ui.renderizarTareasSemanalesV3(this.state.tareasSemanales));
+                if (id !== 'filter-ts-estado') el.addEventListener('input', () => ui.renderizarTareasSemanalesV3(this.state.tareasSemanales));
+            }
+        });
+
+        ['filter-prev-usuario', 'filter-prev-mes', 'filter-prev-semana'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => ui.renderizarPreventivoV3(this.state.planPreventivo));
+                if (id === 'filter-prev-usuario') el.addEventListener('input', () => ui.renderizarPreventivoV3(this.state.planPreventivo));
+            }
+        });
 
         document.getElementById('btn-export-inv').addEventListener('click', () => {
             if (this.state.moduloActual === 'tareas') {
@@ -492,679 +524,53 @@ const MainApp = {
 
 
 
-        // Tareas Recurrentes Generar Checkboxes
-        ui.generarCheckboxesMeses();
-        
-        const formRecurrente = document.getElementById('form-tarea-recurrente');
-        if (formRecurrente) {
-            formRecurrente.addEventListener('submit', e => {
-                e.preventDefault();
-                this.registrarTareaRecurrente();
-            });
-        }
+        // Tareas V3.0
+        const formMensual = document.getElementById('form-tarea-mensual');
+        if (formMensual) formMensual.addEventListener('submit', e => this.registrarTareaMensual(e));
 
         const formSemanal = document.getElementById('form-tarea-semanal');
-        if (formSemanal) {
-            formSemanal.addEventListener('submit', e => {
-                e.preventDefault();
-                this.registrarTareaSemanal();
-            });
-        }
+        if (formSemanal) formSemanal.addEventListener('submit', e => this.registrarTareaSemanalV3(e));
 
-        const formPrev = document.getElementById('form-preventivo-usuario');
-        if (formPrev) {
-            formPrev.addEventListener('submit', e => {
-                e.preventDefault();
-                this.registrarUsuarioPreventivo();
-            });
-        }
+        const formPrev = document.getElementById('form-prev-masivo');
+        if (formPrev) formPrev.addEventListener('submit', e => this.asignacionMasivaPreventivo(e));
 
-        const formBitacora = document.getElementById('form-bitacora');
-        if (formBitacora) {
-            document.getElementById('bitacora-fecha').value = hoy;
-            formBitacora.addEventListener('submit', e => {
-                e.preventDefault();
-                this.registrarBitacora();
-            });
-        }
-    },
+        const formUsuPrev = document.getElementById('form-usuario-preventivo');
+        if (formUsuPrev) formUsuPrev.addEventListener('submit', e => this.registrarUsuarioPreventivo(e));
 
-    // ── ACCIONES DE PRODUCTO ──
-    abrirNuevoProducto() {
-        document.getElementById('form-producto').reset();
-        document.getElementById('prod-id-edit').value = '';
-        document.getElementById('prod-id').disabled = false;
-        document.getElementById('modal-titulo').textContent = 'Nuevo Producto';
-        document.getElementById('grupo-cantidad-inicial').style.display = '';
-        // Fecha de hoy por defecto
-        const prodFechaEl = document.getElementById('prod-fecha');
-        if (prodFechaEl) prodFechaEl.value = new Date().toISOString().split('T')[0];
-        document.getElementById('modal-producto').classList.add('active');
-    },
+        if(document.getElementById('btn-masivo-mensual')) document.getElementById('btn-masivo-mensual').addEventListener('click', () => this.masivoMensual());
+        if(document.getElementById('btn-masivo-semanal')) document.getElementById('btn-masivo-semanal').addEventListener('click', () => this.masivoSemanal());
+        if(document.getElementById('btn-masivo-prev')) document.getElementById('btn-masivo-prev').addEventListener('click', () => this.masivoPreventivo());
 
-    abrirEditarProducto(id) {
-        const prod = this.state.productos.find(p => String(p.ID) === String(id));
-        if (!prod) return;
-        document.getElementById('form-producto').reset();
-        document.getElementById('prod-id-edit').value = prod.ID;
-        document.getElementById('prod-id').value = prod.ID;
-        document.getElementById('prod-id').disabled = true;
-        document.getElementById('prod-nombre').value = prod.Nombre || '';
-        document.getElementById('prod-categoria').value = prod.Categoria || '';
-        document.getElementById('prod-unidad').value = prod.Unidad || 'Unidades';
-        document.getElementById('prod-desc').value = prod.Descripcion || '';
-        document.getElementById('prod-cantidad').value = prod.Cantidad || 0;
-        const prodFechaEl = document.getElementById('prod-fecha');
-        if (prodFechaEl) prodFechaEl.value = prod.FechaRegistro || '';
-        document.getElementById('modal-titulo').textContent = 'Editar Producto';
-        document.getElementById('grupo-cantidad-inicial').style.display = '';
-        document.getElementById('modal-producto').classList.add('active');
-    },
-
-    cerrarModal() {
-        document.getElementById('modal-producto').classList.remove('active');
-        document.getElementById('prod-id').disabled = false;
-    },
-
-    async guardarProducto() {
-        const idEdit = document.getElementById('prod-id-edit').value;
-        const idInput = document.getElementById('prod-id').value.trim();
-        const finalId = idEdit || idInput;
-        const hoy = new Date().toISOString().split('T')[0];
-        const prodFechaEl = document.getElementById('prod-fecha');
-
-        const producto = {
-            ID: String(finalId).trim(),
-            Nombre: document.getElementById('prod-nombre').value.trim(),
-            Categoria: document.getElementById('prod-categoria').value.trim(),
-            Descripcion: document.getElementById('prod-desc').value.trim(),
-            Cantidad: parseInt(document.getElementById('prod-cantidad').value) || 0,
-            Unidad: document.getElementById('prod-unidad').value,
-            FechaRegistro: (prodFechaEl && prodFechaEl.value) ? prodFechaEl.value : hoy
-        };
-
-        if (!producto.ID || !producto.Nombre || !producto.Categoria) {
-            utils.mostrarToast('Complete los campos requeridos', 'warning');
-            return;
-        }
-
-        console.log('[DEBUG] Enviando producto al servidor:', producto);
-
-        utils.mostrarLoader('Guardando producto...');
-        try {
-            const res = await api.post({ action: 'guardarProducto', producto });
-            utils.mostrarToast(res.mensaje || 'Producto guardado', 'success');
-
-            const idx = this.state.productos.findIndex(p => String(p.ID) === String(finalId));
-            if (idx !== -1) this.state.productos[idx] = producto;
-            else this.state.productos.push(producto);
-
-            this.cerrarModal();
-            this.actualizarUI();
-        } catch (err) {
-            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarProducto(id) {
-        const idLimpio = String(id).trim();
-        if (!confirm(`¿Eliminar el producto "${idLimpio}"?\nEsta acción no se puede deshacer.`)) return;
-        
-        utils.mostrarLoader('Eliminando producto...');
-        try {
-            const res = await api.post({ action: 'eliminarProducto', id: idLimpio });
-            
-            // Si el servidor confirma éxito, actualizamos el estado local
-            this.state.productos = this.state.productos.filter(p => String(p.ID).trim() !== idLimpio);
-            
-            utils.mostrarToast(res.mensaje || 'Producto eliminado', 'success');
-            this.actualizarUI();
-        } catch (err) {
-            console.error('Error al eliminar:', err);
-            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
-            // Recargar datos por si acaso hay desincronización
-            this.cargarTodosLosDatos();
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // ── ACCIONES DE MOVIMIENTO ──
-    async registrarEntrada() {
-        const prodId = document.getElementById('entrada-producto').value;
-        const cantidad = parseInt(document.getElementById('entrada-cantidad').value);
-        const fecha = document.getElementById('entrada-fecha').value;
-        const obs = document.getElementById('entrada-obs').value.trim();
-
-        if (!prodId || cantidad < 1 || !fecha) {
-            utils.mostrarToast('Complete campos requeridos', 'warning'); return;
-        }
-
-        const prod = this.state.productos.find(p => String(p.ID) === String(prodId));
-        if (!prod) return;
-
-        const movimiento = { ID_Producto: prod.ID, Nombre_Producto: prod.Nombre, Cantidad: cantidad, Fecha: fecha, Observacion: obs || 'Ingreso' };
-
-        utils.mostrarLoader('Registrando entrada...');
-        try {
-            const res = await api.post({ action: 'registrarEntrada', movimiento });
-            utils.mostrarToast(`Entrada registrada. Stock: ${res.stock_nuevo}`, 'success');
-
-            prod.Cantidad = res.stock_nuevo;
-            this.state.entradas.push({ ...movimiento, ID_Movimiento: res.id_movimiento });
-
-            document.getElementById('form-entrada').reset();
-            document.getElementById('entrada-fecha').value = new Date().toISOString().split('T')[0];
-            this.actualizarUI();
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async registrarSalida() {
-        const prodId = document.getElementById('salida-producto').value;
-        const cantidad = parseInt(document.getElementById('salida-cantidad').value);
-        const fecha = document.getElementById('salida-fecha').value;
-        const obs = document.getElementById('salida-obs').value.trim();
-
-        if (!prodId || cantidad < 1 || !fecha) {
-            utils.mostrarToast('Complete campos requeridos', 'warning'); return;
-        }
-
-        const prod = this.state.productos.find(p => String(p.ID) === String(prodId));
-        if (!prod) return;
-
-        if (cantidad > Number(prod.Cantidad)) {
-            utils.mostrarToast(`Stock insuficiente. Disp: ${prod.Cantidad}`, 'danger'); return;
-        }
-
-        const movimiento = { ID_Producto: prod.ID, Nombre_Producto: prod.Nombre, Cantidad: cantidad, Fecha: fecha, Observacion: obs || 'Retiro' };
-
-        utils.mostrarLoader('Registrando salida...');
-        try {
-            const res = await api.post({ action: 'registrarSalida', movimiento });
-            utils.mostrarToast(`Salida registrada. Stock: ${res.stock_nuevo}`, 'success');
-
-            prod.Cantidad = res.stock_nuevo;
-            this.state.salidas.push({ ...movimiento, ID_Movimiento: res.id_movimiento });
-
-            document.getElementById('form-salida').reset();
-            document.getElementById('salida-fecha').value = new Date().toISOString().split('T')[0];
-            document.getElementById('salida-stock-info').innerHTML = `<i class="fa-solid fa-info-circle"></i> Seleccione un producto`;
-            
-            this.actualizarUI();
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // ── FILTROS DE PRODUCTOS ──
-    filtrarProductos() {
-        const nombre = (document.getElementById('filter-prod-nombre')?.value || '').toLowerCase().trim();
-        const fecha  = document.getElementById('filter-prod-fecha')?.value || '';
-        ui.renderizarProductos(this.state.productos, nombre, fecha);
-    },
-
-    // ── ACCIONES DE ENTREGAS ──
-    filtrarEntregas() {
-        const nombre = (document.getElementById('filter-entrega-nombre').value || '').toLowerCase().trim();
-        const fecha = document.getElementById('filter-entrega-fecha').value || '';
-        
-        let filtradas = this.state.entregas;
-        if (nombre) filtradas = filtradas.filter(t => t.Nombre.toLowerCase().includes(nombre));
-        if (fecha) filtradas = filtradas.filter(t => t.Fecha === fecha);
-        
-        ui.renderizarEntregas(filtradas);
-    },
-
-    async registrarEntrega() {
-        const nombre = document.getElementById('entrega-nombre').value.trim();
-        const fecha = document.getElementById('entrega-fecha').value;
-        const desc = document.getElementById('entrega-desc').value.trim();
-
-        if (!nombre || !fecha || !desc) {
-            utils.mostrarToast('Complete los campos de la entrega', 'warning');
-            return;
-        }
-
-        const nuevaEntrega = {
-            id: Date.now().toString(),
-            Nombre: nombre,
-            Fecha: fecha,
-            Descripcion: desc
-        };
-
-        utils.mostrarLoader('Registrando entrega...');
-        try {
-            const res = await api.post({ action: 'registrarEntrega', entrega: nuevaEntrega });
-            utils.mostrarToast(res.mensaje || 'Entrega registrada correctamente', 'success');
-            
-            this.state.entregas.push(nuevaEntrega);
-            
-            document.getElementById('form-entrega').reset();
-            document.getElementById('entrega-fecha').value = new Date().toISOString().split('T')[0];
-            
-            this.filtrarEntregas();
-        } catch (err) {
-            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarEntrega(id) {
-        if (!confirm('¿Desea eliminar esta entrega?')) return;
-        
-        utils.mostrarLoader('Eliminando entrega...');
-        try {
-            const res = await api.post({ action: 'eliminarEntrega', id });
-            utils.mostrarToast(res.mensaje || 'Entrega eliminada', 'success');
-            
-            this.state.entregas = this.state.entregas.filter(t => String(t.id) !== String(id));
-            this.filtrarEntregas();
-        } catch (err) {
-            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-
-
-    // ── NAVEGACIÓN TABS TAREAS ──
-    switchTareasTab(tabId) {
-        this.state.tabTareasActual = tabId;
-        document.querySelectorAll('.tareas-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabId);
-        });
-        document.getElementById('tab-tareas-recurrentes').style.display = tabId === 'recurrentes' ? 'block' : 'none';
-        document.getElementById('tab-tareas-semanales').style.display   = tabId === 'semanales'   ? 'block' : 'none';
-        document.getElementById('tab-tareas-preventivo').style.display  = tabId === 'preventivo'  ? 'block' : 'none';
-        document.getElementById('tab-tareas-bitacora').style.display    = tabId === 'bitacora'    ? 'block' : 'none';
-    },
-
-    // ── ACCIONES RESPONSABLES DE MANTENIMIENTO ──
-    async registrarUsuarioPreventivo() {
-        const area = document.getElementById('prev-area').value.trim();
-        const nombre = document.getElementById('prev-nombre').value.trim();
-        const equipo = document.getElementById('prev-equipo').value;
-        if (!area || !nombre || !equipo) {
-            utils.mostrarToast('Complete todos los campos', 'warning');
-            return;
-        }
-
-        const session = api.getSession();
-        const nueva = {
-            id: 'PREV-' + Date.now().toString(),
-            Area: area,
-            Usuario: nombre,
-            Equipo: equipo,
-            SemanasComp: '{}',
-            UsuarioSistema: session.usuario || 'Admin'
-        };
-
-        utils.mostrarLoader('Registrando responsable...');
-        try {
-            await api.post({ action: 'addUsuarioPreventivo', ...nueva });
-            this.state.planPreventivo.push(nueva);
-            this.actualizarUI();
-            document.getElementById('form-preventivo-usuario').reset();
-            utils.mostrarToast('Responsable registrado correctamente', 'success');
-        } catch (err) {
-            utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarResponsable(id) {
-        if (!confirm('¿Desea eliminar a este responsable? Se eliminarán todos sus registros de mantenimiento.')) return;
-        
-        utils.mostrarLoader('Eliminando responsable...');
-        try {
-            await api.post({ action: 'deleteUsuarioPreventivo', id });
-            
-            this.state.planPreventivo = this.state.planPreventivo.filter(r => String(r.id) !== String(id));
-            this.actualizarUI();
-            utils.mostrarToast('Responsable eliminado', 'success');
-        } catch (err) {
-            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async toggleSemanaPreventivo(id, semId) {
-        const registro = this.state.planPreventivo.find(r => String(r.id) === String(id));
-        if (!registro) return;
-
-        let comp = {};
-        try { comp = JSON.parse(registro.SemanasComp || '{}'); } catch(e){ comp = {}; }
-        
-        const actual = comp[semId];
-        let nuevo = null;
-        if (!actual) nuevo = 'realizado'; // Verde
-        else if (actual === 'realizado') nuevo = 'fallo'; // Rojo
-        else if (actual === 'fallo') nuevo = 'medio';   // Amarillo
-        else nuevo = null; // Volver a vacío
-
-        const mesActual = parseInt(semId.match(/M(\d+)W/)[1]);
-
-        utils.mostrarLoader('Actualizando...');
-        try {
-            if (nuevo) comp[semId] = nuevo;
-            else delete comp[semId];
-
-            const nuevaComp = JSON.stringify(comp);
-            await api.post({ action: 'updatePlanPreventivo', id: id, SemanasComp: nuevaComp });
-            
-            registro.SemanasComp = nuevaComp;
-            ui.renderizarPlanPreventivo(this.state.planPreventivo);
-            ui.abrirDetalleMes(mesActual);
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // ── ACCIONES TAREAS SEMANALES ──
-    async registrarTareaSemanal() {
-        const nombre = document.getElementById('ts-nombre').value.trim();
-        const categoria = document.getElementById('ts-categoria').value.trim() || 'General';
-        const fecha = document.getElementById('ts-fecha').value;
-        const equipo = document.getElementById('ts-equipo').value;
-        if (!nombre || !fecha) {
-            utils.mostrarToast('Actividad y Fecha son obligatorias', 'warning');
-            return;
-        }
-
-        const session = api.getSession();
-        const usr = session.usuario || 'Admin';
-        const nueva = { 
-            id: 'TS-' + Date.now().toString(), 
-            Nombre: nombre, 
-            Categoria: categoria, 
-            Equipo: equipo || 'General',
-            Fecha: fecha,
-            DiasComp: "[]", 
-            UsuarioSistema: usr 
-        };
-        
-        utils.mostrarLoader('Guardando tarea semanal...');
-        try {
-            const res = await api.post({ action: 'addTareaSemanal', ...nueva });
-            utils.mostrarToast(res.mensaje || 'Tarea semanal guardada', 'success');
-            
-            this.state.tareasSemanales.push(nueva);
-            document.getElementById('form-tarea-semanal').reset();
-            ui.renderizarTareasSemanales(this.state.tareasSemanales);
-        } catch (err) {
-            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async toggleDiaTarea(idTarea, dia) {
-        const diaNum = String(dia);
-        const tarea = this.state.tareasSemanales.find(t => String(t.id) === String(idTarea));
-        if (!tarea) return;
-
-        let compObj = {};
-        try { compObj = JSON.parse(tarea.DiasComp || '{}'); } catch(e){ compObj = {}; }
-        
-        let fecha = '';
-        if (compObj[diaNum]) {
-            if (!confirm(`Ya tiene la fecha "${compObj[diaNum]}". ¿Desea borrarla o cambiarla?`)) return;
-            const nueva = prompt("Nueva fecha (ej: 31/03) o dejar vacío para borrar:", compObj[diaNum]);
-            if (nueva === null) return;
-            fecha = nueva.trim();
-        } else {
-            const hoy = new Date();
-            const sugerencia = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}`;
-            const nueva = prompt("Ingrese la fecha de realización (ej: 31/03):", sugerencia);
-            if (!nueva) return;
-            fecha = nueva.trim();
-        }
-
-        utils.mostrarLoader('Actualizando...');
-        try {
-            if (fecha) compObj[diaNum] = fecha;
-            else delete compObj[diaNum];
-
-            const nuevaComp = JSON.stringify(compObj);
-            const res = await api.post({ action: 'updateTareaSemanal', id: idTarea, DiasComp: nuevaComp });
-            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
-            
-            tarea.DiasComp = nuevaComp;
-            ui.renderizarTareasSemanales(this.state.tareasSemanales);
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarTareaSemanal(id) {
-        if (!confirm('¿Eliminar esta tarea semanal?')) return;
-        utils.mostrarLoader('Eliminando tarea...');
-        try {
-            await api.post({ action: 'deleteTareaSemanal', id });
-            utils.mostrarToast('Tarea eliminada', 'success');
-            this.state.tareasSemanales = this.state.tareasSemanales.filter(t => String(t.id) !== String(id));
-            ui.renderizarTareasSemanales(this.state.tareasSemanales);
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // ── ACCIONES TAREAS RECURRENTES ──
-    async registrarTareaRecurrente() {
-        const nombre = document.getElementById('tr-nombre').value.trim();
-        const categoriaEl = document.getElementById('tr-categoria');
-        const categoria = categoriaEl ? categoriaEl.value : 'General';
-        if (!nombre) return;
-
-        // Recolectar meses tickeados (1 a 12)
-        const checkboxes = document.querySelectorAll('.tr-mes-check');
-        const mesesProg = [];
-        checkboxes.forEach(cb => {
-            if (cb.checked) mesesProg.push(Number(cb.value));
-        });
-
-        if (mesesProg.length === 0) {
-            utils.mostrarToast('Selecciona al menos un mes a programar', 'warning');
-            return;
-        }
-
-        const session = api.getSession();
-        const usr = session.usuario || 'Admin';
-        const nueva = { 
-            id: 'TR-' + Date.now().toString(), 
-            Nombre: nombre, 
-            Categoria: categoria, 
-            MesesProg: JSON.stringify(mesesProg), 
-            MesesComp: "[]", 
-            Año: new Date().getFullYear().toString(),
-            UsuarioSistema: usr 
-        };
-        
-        utils.mostrarLoader('Guardando configuración...');
-        try {
-            const res = await api.post({ action: 'addTareaRecurrente', ...nueva });
-            utils.mostrarToast(res.mensaje || 'Programación Anual guardada', 'success');
-            
-            this.state.tareasRecurrentes.push(nueva);
-            
-            document.getElementById('form-tarea-recurrente').reset();
-            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-        } catch (err) {
-            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async toggleMesTarea(idTarea, mes) {
-        const mesNum = Number(mes);
-        // Encontrar la tarea en estado local
-        const tarea = this.state.tareasRecurrentes.find(t => String(t.id) === String(idTarea));
-        if (!tarea) { utils.mostrarToast('Tarea no encontrada localmente', 'danger'); return; }
-
-        utils.mostrarLoader('Actualizando estado...');
-        try {
-            // Actualizar localmente y sincronizar con backend
-            let comp = [];
-            try { comp = JSON.parse(tarea.MesesComp || '[]').map(Number); } catch (e) { comp = []; }
-            if (comp.includes(mesNum)) {
-                comp = comp.filter(m => m !== mesNum);
-            } else {
-                comp.push(mesNum);
+        // Listeners Pestaña Filtros Tareas
+        const evRenderMes = () => ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+        ['filter-tm-nombre', 'filter-tm-mes', 'filter-tm-estado'].forEach(id => {
+            if(document.getElementById(id)) {
+                document.getElementById(id).addEventListener('change', evRenderMes);
+                document.getElementById(id).addEventListener('input', evRenderMes);
             }
-            const nuevaComp = JSON.stringify(comp);
-            
-            const res = await api.post({ action: 'updateTareaRecurrente', id: idTarea, MesesComp: nuevaComp });
-            if (res.error) throw new Error(res.error);
-            utils.mostrarToast(res.mensaje || 'Actualizado', 'success');
-
-            tarea.MesesComp = nuevaComp;
-
-            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-        } catch (err) {
-            utils.mostrarToast('Error de sincronización: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    async eliminarTareaRecurrente(id) {
-        if (!confirm('¿Eliminar por completo esta programación anual?')) return;
-        utils.mostrarLoader('Eliminando programación...');
-        try {
-            await api.post({ action: 'deleteTareaRecurrente', id });
-            utils.mostrarToast('Programación eliminada', 'success');
-            this.state.tareasRecurrentes = this.state.tareasRecurrentes.filter(t => String(t.id) !== String(id));
-            ui.renderizarTareasRecurrentes(this.state.tareasRecurrentes);
-        } catch (err) {
-            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // ── ACCIONES BITÁCORA ──
-    abrirImagen(src) {
-        if (!src || src.includes('data:image/gif')) return;
-        const modal = document.getElementById('modal-visor');
-        const img = document.getElementById('visor-imagen-src');
-        if (modal && img) {
-            img.src = src;
-            modal.classList.add('active');
-        }
-    },
-
-    cerrarImagen() {
-        const modal = document.getElementById('modal-visor');
-        if (modal) {
-            modal.classList.remove('active');
-            setTimeout(() => {
-                const img = document.getElementById('visor-imagen-src');
-                if (img) img.src = '';
-            }, 300);
-        }
-    },
-    async registrarBitacora() {
-        const fecha = document.getElementById('bitacora-fecha').value;
-        const desc = document.getElementById('bitacora-desc').value.trim();
-        const fileInput = document.getElementById('bitacora-file');
-
-        if (!fecha || !desc || !fileInput.files[0]) return;
-
-        utils.mostrarLoader('Comprimiendo imagen...');
-        
-        try {
-            // Leer y comprimir la imagen localmente
-            const base64Image = await this.comprimirImagenAbase64(fileInput.files[0]);
-            const session = api.getSession();
-            const usr = session.usuario || 'Admin';
-            const payload = { 
-                id: Date.now().toString(), 
-                Fecha: fecha, 
-                Descripcion: desc, 
-                Imagen: base64Image,
-                Usuario: usr 
-            };
-            
-            utils.mostrarLoader('Subiendo evidencia...');
-            const res = await api.post({ action: 'addBitacora', ...payload });
-            utils.mostrarToast(res.mensaje || 'Registro completado', 'success');
-            
-            this.state.bitacora.unshift(payload); // Meter primero para que salga arriba
-            
-            document.getElementById('form-bitacora').reset();
-            document.getElementById('bitacora-fecha').value = new Date().toISOString().split('T')[0];
-            
-            ui.renderizarBitacora(this.state.bitacora);
-        } catch (err) {
-            utils.mostrarToast('Error en la Bitácora: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
-        }
-    },
-
-    // Función auxiliar para comprimir al máximo una imagen subida por el usuario
-    comprimirImagenAbase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 600; // Resolución tope para no crashear Google Sheets
-                    const MAX_HEIGHT = 600;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Comprimir drásticamente a JPEG (0.5 calidad)
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
-                    resolve(dataUrl);
-                };
-                img.onerror = error => reject(error);
-            };
-            reader.onerror = error => reject(error);
         });
-    }
-};
+        const evRenderSem = () => ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+        ['filter-ts-nombre', 'filter-ts-semana', 'filter-ts-estado'].forEach(id => {
+            if(document.getElementById(id)) {
+                document.getElementById(id).addEventListener('change', evRenderSem);
+                document.getElementById(id).addEventListener('input', evRenderSem);
+            }
+        });
+        const evRenderPre = () => ui.renderizarPreventivoV3(this.state.planPreventivo);
+        ['filter-prev-usuario', 'filter-prev-area', 'filter-prev-mes', 'filter-prev-estado'].forEach(id => {
+            if(document.getElementById(id)) {
+                document.getElementById(id).addEventListener('change', evRenderPre);
+                document.getElementById(id).addEventListener('input', evRenderPre);
+            }
+        });
+    },
 
+};
 window.MainApp = MainApp;
 
+// ==========================================
+// AUTOARANQUE Y VENTANA
+// ==========================================
 window.startApp = function(mode) {
     const landing = document.getElementById('landing-portal');
     const appCont = document.getElementById('app-container');

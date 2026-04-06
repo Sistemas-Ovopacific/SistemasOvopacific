@@ -1,0 +1,374 @@
+// ============================================================
+//  js/controllers/tareasController.js
+//  Controlador de Tareas y Mantenimiento
+// ============================================================
+
+Object.assign(window.MainApp, {
+    async registrarTareaMensual(e) {
+        if (e) e.preventDefault();
+        const nombre = document.getElementById('tm-nombre').value.trim();
+        if (!nombre) return;
+
+        // Recolectar meses marcados
+        const checks = document.querySelectorAll('.tr-mes-check:checked');
+        if (checks.length === 0) {
+            utils.mostrarToast('Debes seleccionar al menos un mes.', 'warning');
+            return;
+        }
+        const mesesData = Array.from(checks).map(c => Number(c.value));
+
+        const session = api.getSession();
+        const payload = {
+            Nombre: nombre,
+            UsuarioSistema: session.usuario || 'Admin',
+            meses: mesesData
+        };
+
+        const len = mesesData.length;
+        utils.mostrarLoader(`Generando ${len} registro(s) mensual(es)...`);
+        try {
+            const res = await api.post({ action: 'addTareaMensualGroup', ...payload });
+            if (res.success && res.generados) {
+                this.state.tareasRecurrentes.push(...res.generados);
+            }
+            utils.mostrarToast(`${len} registro(s) generado(s)`, 'success');
+            document.getElementById('form-tarea-mensual').reset();
+            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+            ui.renderizarDashboardTareas(this.state);
+        } catch (err) {
+            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarTareaMensualGrupo(nombre) {
+        if (!confirm(`¿Estás seguro de eliminar TODO el grupo de tareas: "${nombre}"? Esto borrará todos sus meses asociados y es irreversible.`)) return;
+        
+        utils.mostrarLoader('Eliminando grupo de tareas...');
+        try {
+            const res = await api.post({
+                action: 'deleteTareaMensualGroup',
+                Nombre: nombre
+            });
+            if (res.success) {
+                // Actualizar estado local
+                this.state.tareasRecurrentes = this.state.tareasRecurrentes.filter(t => t.Nombre !== nombre);
+                ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+                ui.renderizarDashboardTareas(this.state);
+                utils.mostrarToast(`Grupo "${nombre}" eliminado con éxito`, 'success');
+            } else {
+                throw new Error("El servidor no confirmó la eliminación");
+            }
+        } catch (e) {
+            console.error(e);
+            utils.mostrarToast('Error al eliminar el grupo', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+    async eliminarTareaMensual(id) {
+        if (!confirm('¿Eliminar este registro mensual?')) return;
+        utils.mostrarLoader('Eliminando tarea...');
+        try {
+            await api.post({ action: 'deleteTareaMensual', id });
+            this.state.tareasRecurrentes = this.state.tareasRecurrentes.filter(t => String(t.id) !== String(id));
+            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+            ui.renderizarDashboardTareas(this.state);
+            utils.mostrarToast('Eliminada', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async masivoMensual() {
+        const checkboxes = document.querySelectorAll('.tm-check:checked');
+        if (checkboxes.length === 0) return utils.mostrarToast('Seleccione al menos una tarea', 'warning');
+        if (!confirm('¿Marcar las tareas seleccionadas como Finalizadas?')) return;
+
+        utils.mostrarLoader('Actualizando...');
+        try {
+            for (let chk of checkboxes) {
+                let id = chk.value;
+                let t = this.state.tareasRecurrentes.find(x => x.id === id);
+                if (t && t.Estado !== 'Finalizada') {
+                    t.Estado = 'Finalizada';
+                    t.FechaFinalizacion = new Date().toISOString().split('T')[0];
+                    await api.post({ action: 'updateTareaMensual', tarea: t });
+                }
+            }
+            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+            ui.renderizarDashboardTareas(this.state);
+            document.getElementById('check-all-tm').checked = false;
+            utils.mostrarToast('Tareas actualizadas', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ==========================================
+    // ── ACCIONES TAREAS SEMANALES ──
+    // ==========================================
+    async registrarTareaSemanalV3(e) {
+        if (e) e.preventDefault();
+        const nombre = document.getElementById('ts-nombre').value.trim();
+        const semana = document.getElementById('ts-semana').value;
+        if (!nombre || !semana) return;
+
+        const session = api.getSession();
+        const fechaHoy = new Date().toISOString().split('T')[0];
+        const payload = {
+            id: 'TS-' + Date.now(),
+            Nombre: nombre,
+            Semana: semana,
+            FechaCreacion: fechaHoy,
+            FechaFinalizacion: '',
+            Estado: 'Pendiente',
+            UsuarioSistema: session.usuario || 'Admin'
+        };
+
+        utils.mostrarLoader('Guardando semanal...');
+        try {
+            await api.post({ action: 'addTareaSemanal', ...payload });
+            this.state.tareasSemanales.push(payload);
+            document.getElementById('form-tarea-semanal').reset();
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+            ui.renderizarDashboardTareas(this.state);
+            utils.mostrarToast('Semanal registrada', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarTareaSemanalV3(id) {
+        if (!confirm('¿Eliminar registro semanal?')) return;
+        utils.mostrarLoader('Eliminando...');
+        try {
+            await api.post({ action: 'deleteTareaSemanal', id });
+            this.state.tareasSemanales = this.state.tareasSemanales.filter(t => String(t.id) !== String(id));
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+            ui.renderizarDashboardTareas(this.state);
+            utils.mostrarToast('Eliminado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async masivoSemanal() {
+        const checkboxes = document.querySelectorAll('.ts-check:checked');
+        if (checkboxes.length === 0) return utils.mostrarToast('Seleccione al menos una', 'warning');
+        if (!confirm('¿Marcar seleccionadas como Finalizadas?')) return;
+        utils.mostrarLoader('Actualizando...');
+        try {
+            for (let chk of checkboxes) {
+                let id = chk.value;
+                let t = this.state.tareasSemanales.find(x => x.id === id);
+                if (t && t.Estado !== 'Finalizada') {
+                    t.Estado = 'Finalizada';
+                    t.FechaFinalizacion = new Date().toISOString().split('T')[0];
+                    await api.post({ action: 'updateTareaSemanal', tarea: t });
+                }
+            }
+            ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
+            ui.renderizarDashboardTareas(this.state);
+            document.getElementById('check-all-ts').checked = false;
+            utils.mostrarToast('Actualizado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ==========================================
+    // ── ACCIONES MANTENIMIENTO PREVENTIVO ──
+    // ==========================================
+    async asignacionMasivaPreventivo(e) {
+        if (e) e.preventDefault();
+        const mes = document.getElementById('prev-masivo-mes').value;
+        const fecha = document.getElementById('prev-masivo-fecha').value;
+
+        if (!mes) return;
+
+        const session = api.getSession();
+        utils.mostrarLoader('Asignando masivamente...');
+        try {
+            const res = await api.post({ 
+                action: 'addPreventivoMasivo', 
+                Mes: mes, 
+                FechaRealizacion: fecha,
+                UsuarioSistema: session.usuario || 'Admin' 
+            });
+            
+            if (res.success && res.generados) {
+                this.state.planPreventivo.push(...res.generados);
+            }
+            document.getElementById('form-prev-masivo').reset();
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
+            ui.renderizarDashboardTareas(this.state);
+            utils.mostrarToast('Asignación registrada a todos los usuarios', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarPreventivoV3(id) {
+        if (!confirm('¿Eliminar este mantenimiento asignado?')) return;
+        utils.mostrarLoader('Eliminando...');
+        try {
+            await api.post({ action: 'deletePreventivo', id });
+            this.state.planPreventivo = this.state.planPreventivo.filter(r => String(r.id) !== String(id));
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
+            ui.renderizarDashboardTareas(this.state);
+            utils.mostrarToast('Eliminado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async masivoPreventivo() {
+        const checkboxes = document.querySelectorAll('.prev-check:checked');
+        if (checkboxes.length === 0) return utils.mostrarToast('Seleccione al menos una', 'warning');
+        if (!confirm('¿Marcar seleccionados como Realizados hoy?')) return;
+        utils.mostrarLoader('Actualizando...');
+        try {
+            const hoy = new Date().toISOString().split('T')[0];
+            for (let chk of checkboxes) {
+                let id = chk.value;
+                let t = this.state.planPreventivo.find(x => x.id === id);
+                if (t && t.Estado !== 'Realizado') {
+                    t.Estado = 'Realizado';
+                    t.FechaRealizacion = hoy;
+                    await api.post({ action: 'updatePreventivo', preventivo: t });
+                }
+            }
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
+            ui.renderizarDashboardTareas(this.state);
+            document.getElementById('check-all-prev').checked = false;
+            utils.mostrarToast('Actualizado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ── ACCIONES USUARIOS ──
+    async registrarUsuarioPreventivo(e) {
+        if (e) e.preventDefault();
+        const nom = document.getElementById('uprev-nombre').value.trim();
+        const area = document.getElementById('uprev-area').value.trim();
+        if(!nom || !area) return;
+
+        utils.mostrarLoader('Guardando usuario...');
+        try {
+            const u = { id: 'UPREV-'+Date.now(), Nombre: nom, Area: area };
+            await api.post({ action: 'addUsuarioPreventivo', usuario: u });
+            if(!this.state.usuariosPreventivo) this.state.usuariosPreventivo = [];
+            this.state.usuariosPreventivo.push(u);
+            document.getElementById('form-usuario-preventivo').reset();
+            ui.renderizarResponsables(this.state.usuariosPreventivo);
+            utils.mostrarToast('Usuario guardado', 'success');
+        } catch(err) {
+            utils.mostrarToast('Error', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+    
+    async eliminarResponsable(id) {
+        if (!confirm('¿Eliminar usuario preventivo?')) return;
+        utils.mostrarLoader('Eliminando...');
+        try {
+            await api.post({ action: 'deleteUsuarioPreventivo', id });
+            this.state.usuariosPreventivo = this.state.usuariosPreventivo.filter(u => u.id !== id);
+            ui.renderizarResponsables(this.state.usuariosPreventivo);
+            utils.mostrarToast('Eliminado', 'success');
+        } catch(err) {
+            utils.mostrarToast('Error', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    // ==========================================
+    // ── ACCIONES BITÁCORA V3.0 Y GOOGLE DRIVE ──
+    // ==========================================
+    async registrarBitacoraDrive(e) {
+        if (e) e.preventDefault();
+        const titulo = document.getElementById('bitacora-titulo').value.trim();
+        const asociado = document.getElementById('bitacora-asociado').value;
+        const desc = document.getElementById('bitacora-desc').value.trim();
+        const fecha = document.getElementById('bitacora-fecha').value;
+        const fileInput = document.getElementById('bitacora-file');
+
+        if (!titulo || !fecha || !desc || !fileInput.files[0]) return;
+        const file = fileInput.files[0];
+
+        utils.mostrarLoader('Subiendo evidencia a Google Drive (Puede tardar)...');
+        try {
+            const dataUrl = await this.fileToBase64(file);
+            const b64Parts = dataUrl.split(',');
+            const base64Data = b64Parts.length > 1 ? b64Parts[1] : dataUrl;
+
+            const session = api.getSession();
+            const payload = { 
+                id: 'EVID-' + Date.now().toString(), 
+                Titulo: titulo,
+                AsociadoA: asociado,
+                Fecha: fecha, 
+                Descripcion: desc, 
+                base64Data: base64Data, // Procesado en backend y luego descartado para Sheet
+                mimeType: file.type,
+                filename: file.name,
+                UsuarioSistema: session.usuario || 'Admin' 
+            };
+            
+            const res = await api.post({ action: 'uploadEvidencia', ...payload });
+            
+            // Reconstruimos objeto para el array local quitando base64 (muy pesado en RAM)
+            const localObj = {
+                id: payload.id,
+                Titulo: payload.Titulo,
+                AsociadoA: payload.AsociadoA,
+                Fecha: payload.Fecha,
+                Descripcion: payload.Descripcion,
+                DriveUrl: res.data ? res.data.DriveUrl : '',
+                UsuarioSistema: payload.UsuarioSistema
+            };
+
+            this.state.bitacora.unshift(localObj);
+            document.getElementById('form-bitacora').reset();
+            document.getElementById('bitacora-fecha').value = new Date().toISOString().split('T')[0];
+            
+            ui.renderizarBitacoraV3(this.state.bitacora);
+            utils.mostrarToast('Subido a Drive y Registrado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al subir a Drive: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => resolve(event.target.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+});
