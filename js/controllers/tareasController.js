@@ -86,28 +86,56 @@ Object.assign(window.MainApp, {
     async masivoMensual() {
         const checkboxes = document.querySelectorAll('.tm-check:checked');
         if (checkboxes.length === 0) return utils.mostrarToast('Seleccione al menos una tarea', 'warning');
-        if (!confirm('¿Marcar las tareas seleccionadas como Finalizadas?')) return;
+        
+        // Obtener objetos de las tareas seleccionadas
+        const selectedTasks = Array.from(checkboxes).map(chk => 
+            this.state.tareasRecurrentes.find(x => String(x.id) === String(chk.value))
+        ).filter(t => t);
 
-        utils.mostrarLoader('Actualizando...');
-        try {
-            for (let chk of checkboxes) {
-                let id = chk.value;
-                let t = this.state.tareasRecurrentes.find(x => x.id === id);
-                if (t && t.Estado !== 'Finalizada') {
-                    t.Estado = 'Finalizada';
-                    t.FechaFinalizacion = new Date().toISOString().split('T')[0];
+        const alMenosUnaPendiente = selectedTasks.some(t => t.Estado !== 'Finalizada');
+
+        if (!alMenosUnaPendiente) {
+            // Si TODAS están finalizadas, preguntar si quiere DESMARCARLAS
+            if (!confirm(`¿Deseas DESMARCAR ${selectedTasks.length} tareas y volverlas a PENDIENTE?`)) return;
+            
+            utils.mostrarLoader('Cambiando a Pendiente...');
+            try {
+                for (let t of selectedTasks) {
+                    t.Estado = 'Pendiente';
+                    t.FechaFinalizacion = '';
                     await api.post({ action: 'updateTareaMensual', tarea: t });
                 }
+                utils.mostrarToast('Tareas devueltas a Pendiente', 'success');
+            } catch (err) {
+                utils.mostrarToast('Error al desmarcar: ' + err.message, 'danger');
             }
-            ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
-            ui.renderizarDashboardTareas(this.state);
-            document.getElementById('check-all-tm').checked = false;
-            utils.mostrarToast('Tareas actualizadas', 'success');
-        } catch (err) {
-            utils.mostrarToast('Error: ' + err.message, 'danger');
-        } finally {
-            utils.ocultarLoader();
+        } else {
+            // Si hay pendientes, el flujo normal de FINALIZAR
+            const fechaFin = prompt('Ingrese la fecha de finalización (AAAA-MM-DD):', new Date().toISOString().split('T')[0]);
+            if (!fechaFin) return;
+
+            if (!confirm(`¿Marcar ${selectedTasks.length} tareas como Finalizadas con fecha ${fechaFin}?`)) return;
+
+            utils.mostrarLoader('Actualizando...');
+            try {
+                for (let t of selectedTasks) {
+                    if (t.Estado !== 'Finalizada') {
+                        t.Estado = 'Finalizada';
+                        t.FechaFinalizacion = fechaFin;
+                        await api.post({ action: 'updateTareaMensual', tarea: t });
+                    }
+                }
+                utils.mostrarToast('Tareas finalizadas', 'success');
+            } catch (err) {
+                utils.mostrarToast('Error: ' + err.message, 'danger');
+            }
         }
+
+        // Bloque final común
+        utils.ocultarLoader();
+        document.getElementById('check-all-tm').checked = false;
+        ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
+        ui.renderizarDashboardTareas(this.state);
     },
 
     // ==========================================
@@ -115,35 +143,73 @@ Object.assign(window.MainApp, {
     // ==========================================
     async registrarTareaSemanalV3(e) {
         if (e) e.preventDefault();
+        const id = document.getElementById('ts-id').value;
         const nombre = document.getElementById('ts-nombre').value.trim();
-        const semana = document.getElementById('ts-semana').value;
-        if (!nombre || !semana) return;
+        const fInicio = document.getElementById('ts-fecha-inicio').value;
+        const fFin = document.getElementById('ts-fecha-fin').value;
+
+        if (!nombre || !fInicio) return;
 
         const session = api.getSession();
-        const fechaHoy = new Date().toISOString().split('T')[0];
+        const isEdit = !!id;
+        
         const payload = {
-            id: 'TS-' + Date.now(),
+            id: isEdit ? id : 'TS-' + Date.now(),
             Nombre: nombre,
-            Semana: semana,
-            FechaCreacion: fechaHoy,
-            FechaFinalizacion: '',
-            Estado: 'Pendiente',
+            Semana: 0, // Ya no se usa, pero mantenemos compatibilidad por ahora
+            FechaCreacion: fInicio,
+            FechaFinalizacion: fFin,
+            Estado: isEdit ? this.state.tareasSemanales.find(t=>t.id===id).Estado : 'Pendiente',
             UsuarioSistema: session.usuario || 'Admin'
         };
 
+        const action = isEdit ? 'updateTareaSemanal' : 'addTareaSemanal';
+        const msg = isEdit ? 'Actualizada' : 'Semanal registrada';
+
         utils.mostrarLoader('Guardando semanal...');
         try {
-            await api.post({ action: 'addTareaSemanal', ...payload });
-            this.state.tareasSemanales.push(payload);
-            document.getElementById('form-tarea-semanal').reset();
+            await api.post({ action, ...(isEdit ? { tarea: payload } : payload) });
+            
+            if (isEdit) {
+                const idx = this.state.tareasSemanales.findIndex(t => String(t.id) === String(id));
+                if (idx !== -1) this.state.tareasSemanales[idx] = payload;
+            } else {
+                this.state.tareasSemanales.push(payload);
+            }
+
+            this.cancelarEdicionSemanalV3();
             ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
             ui.renderizarDashboardTareas(this.state);
-            utils.mostrarToast('Semanal registrada', 'success');
+            utils.mostrarToast(msg, 'success');
         } catch (err) {
             utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
         } finally {
             utils.ocultarLoader();
         }
+    },
+
+    editarTareaSemanalV3(id) {
+        const t = this.state.tareasSemanales.find(x => String(x.id) === String(id));
+        if (!t) return;
+        document.getElementById('ts-id').value = t.id;
+        document.getElementById('ts-nombre').value = t.Nombre;
+        document.getElementById('ts-fecha-inicio').value = t.FechaCreacion || '';
+        document.getElementById('ts-fecha-fin').value = t.FechaFinalizacion || '';
+        
+        document.getElementById('btn-save-ts').innerHTML = '<i class="fa-solid fa-save"></i> Actualizar Tarea';
+        document.getElementById('btn-cancel-ts').style.display = 'inline-block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    cancelarEdicionSemanalV3() {
+        document.getElementById('form-tarea-semanal').reset();
+        document.getElementById('ts-id').value = '';
+        document.getElementById('btn-save-ts').innerHTML = '<i class="fa-solid fa-save"></i> Guardar Tarea Semanal';
+        document.getElementById('btn-cancel-ts').style.display = 'none';
+        
+        // Reset fecha inicio a hoy
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('ts-fecha-inicio').value = hoy;
     },
 
     async eliminarTareaSemanalV3(id) {
@@ -272,9 +338,15 @@ Object.assign(window.MainApp, {
         const area = document.getElementById('uprev-area').value.trim();
         if(!nom || !area) return;
 
+        const session = api.getSession();
         utils.mostrarLoader('Guardando usuario...');
         try {
-            const u = { id: 'UPREV-'+Date.now(), Nombre: nom, Area: area };
+            const u = { 
+                id: 'UPREV-'+Date.now(), 
+                Usuario: nom, // Cambiado de Nombre a Usuario para coincidir con la UI
+                Area: area,
+                UsuarioSistema: session.usuario || 'Admin' 
+            };
             await api.post({ action: 'addUsuarioPreventivo', usuario: u });
             if(!this.state.usuariosPreventivo) this.state.usuariosPreventivo = [];
             this.state.usuariosPreventivo.push(u);
@@ -309,7 +381,6 @@ Object.assign(window.MainApp, {
     async registrarBitacoraDrive(e) {
         if (e) e.preventDefault();
         const titulo = document.getElementById('bitacora-titulo').value.trim();
-        const asociado = document.getElementById('bitacora-asociado').value;
         const desc = document.getElementById('bitacora-desc').value.trim();
         const fecha = document.getElementById('bitacora-fecha').value;
         const fileInput = document.getElementById('bitacora-file');
@@ -327,7 +398,7 @@ Object.assign(window.MainApp, {
             const payload = { 
                 id: 'EVID-' + Date.now().toString(), 
                 Titulo: titulo,
-                AsociadoA: asociado,
+                AsociadoA: 'General', // Valor por defecto ahora que se quitó el select
                 Fecha: fecha, 
                 Descripcion: desc, 
                 base64Data: base64Data, // Procesado en backend y luego descartado para Sheet
@@ -342,7 +413,7 @@ Object.assign(window.MainApp, {
             const localObj = {
                 id: payload.id,
                 Titulo: payload.Titulo,
-                AsociadoA: payload.AsociadoA,
+                AsociadoA: 'General',
                 Fecha: payload.Fecha,
                 Descripcion: payload.Descripcion,
                 DriveUrl: res.data ? res.data.DriveUrl : '',

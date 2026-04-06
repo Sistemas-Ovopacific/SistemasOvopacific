@@ -132,23 +132,37 @@ Object.assign(window.ui, {
             tbody.appendChild(hr);
 
             // Ordenar por mes y renderizar los registros (ocultos inicialmente)
-            items.sort((a, b) => Number(a.Mes) - Number(b.Mes));
+            items.sort((a, b) => {
+                const mesA = a.Mes || a.mes || a.MES || 0;
+                const mesB = b.Mes || b.mes || b.MES || 0;
+                return Number(mesA) - Number(mesB);
+            });
 
             items.forEach(t => {
-                const mesName = mesesStr[Number(t.Mes) - 1] || t.Mes;
-                const estadoCls = t.Estado === 'Finalizada' ? 'status-success' : 'status-warning';
+                // Normalización robusta de campos
+                const mesVal = t.Mes || t.mes || t.MES || "";
+                const mesName = mesesStr[Number(mesVal) - 1] || mesVal || '?';
+                
+                const estado = t.Estado || t.estado || "Pendiente";
+                const fCreacion = t.FechaCreacion || t.fechacreacion || "N/A";
+                const fFinRaw = t.FechaFinalizacion || t.fechafinalizacion || "N/A";
+                const fFin = fFinRaw.length > 10 ? fFinRaw.split('T')[0] : fFinRaw;
+                
+                const idTarea = t.id || t.ID || "";
+
+                const estadoCls = estado === 'Finalizada' ? 'status-success' : 'status-warning';
                 
                 const tr = document.createElement('tr');
                 tr.className = groupId;
                 tr.style.display = 'none'; // Oculto por defecto
                 tr.innerHTML = `
-                    <td style="padding-left: 20px;"><input type="checkbox" class="tm-check" value="${t.id}"></td>
-                    <td><span style="color:#64748b;">${utils.escHtml(t.Nombre)}</span></td>
+                    <td style="padding-left: 20px;"><input type="checkbox" class="tm-check" value="${idTarea}"></td>
+                    <td><span style="color:#64748b;">${utils.escHtml(t.Nombre || t.nombre || "Sin nombre")}</span></td>
                     <td><span class="category-tag">${mesName}</span></td>
-                    <td style="font-size:0.85em; color:#64748b;">Creación: ${t.FechaCreacion || 'N/A'}<br>Fin: ${t.FechaFinalizacion || 'N/A'}</td>
-                    <td><span class="status-badge ${estadoCls}">${utils.escHtml(t.Estado)}</span></td>
+                    <td style="font-size:0.85em; color:#64748b;">Creación: ${fCreacion}<br>Fin: ${fFin}</td>
+                    <td><span class="status-badge ${estadoCls}">${utils.escHtml(estado)}</span></td>
                     <td>
-                        <button class="action-btn del" onclick="MainApp.eliminarTareaMensual('${t.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        <button class="action-btn del" onclick="MainApp.eliminarTareaMensual('${idTarea}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -162,18 +176,15 @@ Object.assign(window.ui, {
         tbody.innerHTML = '';
         
         const fNom = document.getElementById('filter-ts-nombre') ? document.getElementById('filter-ts-nombre').value.toLowerCase().trim() : '';
-        const fSem = document.getElementById('filter-ts-semana') ? document.getElementById('filter-ts-semana').value : '';
         const fEst = document.getElementById('filter-ts-estado') ? document.getElementById('filter-ts-estado').value : '';
-
         const filtrado = tareas.filter(t => {
             if (fNom && !(t.Nombre||'').toLowerCase().includes(fNom)) return false;
-            if (fSem && String(t.Semana) !== String(fSem)) return false;
             if (fEst && String(t.Estado) !== String(fEst)) return false;
             return true;
         });
 
         if (filtrado.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No se encontraron tareas</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No se encontraron tareas</td></tr>';
             return;
         }
 
@@ -184,10 +195,10 @@ Object.assign(window.ui, {
             tr.innerHTML = `
                 <td><input type="checkbox" class="ts-check" value="${t.id}"></td>
                 <td><strong>${utils.escHtml(t.Nombre)}</strong></td>
-                <td><span class="category-tag">Semana ${t.Semana}</span></td>
                 <td style="font-size:0.85em; color:#64748b;">Creación: ${t.FechaCreacion || 'N/A'}<br>Fin: ${t.FechaFinalizacion || 'N/A'}</td>
                 <td><span class="status-badge ${estadoCls}">${utils.escHtml(t.Estado)}</span></td>
                 <td>
+                    <button class="action-btn edit" onclick="MainApp.editarTareaSemanalV3('${t.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
                     <button class="action-btn del" onclick="MainApp.eliminarTareaSemanalV3('${t.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
@@ -302,8 +313,11 @@ Object.assign(window.ui, {
         const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_bitacora || '').toLowerCase().trim() : '';
 
         const filtrado = registros.filter(b => {
-            const bUsr = String(b.UsuarioSistema || '').toLowerCase().trim();
-            if (!isAdmin && !isVisualizer && bUsr !== usr) return false;
+            // Tolerancia a singular/plural UsuarioSistema/UsuarioSistemas
+            const bUsr = String(b.UsuarioSistema || b.UsuarioSistemas || b.usuariosistema || b.usuariosistemas || '').toLowerCase().trim();
+            if (!isAdmin && !isVisualizer && bUsr !== usr && bUsr !== '') return false;
+            // Si el registro no tiene usuario y no somos admin, igual lo mostramos para no perder datos históricos? 
+            // O mejor permitir que se vea si está vacío (bUsr === '')
             if (isVisualizer && selectedUsr !== '' && bUsr !== selectedUsr) return false;
             return true;
         });
@@ -538,7 +552,8 @@ Object.assign(window.ui, {
         }
 
         filtrado.forEach(u => {
-            const initials = (u.Usuario || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            const userName = u.Usuario || u.Nombre || '?';
+            const initials = userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
             const tr = document.createElement('tr');
             
             // Ocultar botón borrar para visualizadores
@@ -553,7 +568,7 @@ Object.assign(window.ui, {
                 <td>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="prev-avatar" style="width:30px; height:30px; font-size:0.75rem;">${initials}</div>
-                        <strong>${utils.escHtml(u.Usuario)}</strong>
+                        <strong>${utils.escHtml(userName)}</strong>
                     </div>
                 </td>
                 <td>

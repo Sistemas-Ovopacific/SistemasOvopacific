@@ -71,10 +71,11 @@ const MainApp = {
         const isAdmin = session.rol === 'admin';
         const isSupervisor = session.rol === 'supervisor';
         
-        // Ocultar módulo de tareas en el portal principal a usuarios normales
+        // Ocultar módulo de tareas en el portal principal a roles no autorizados (ahora incluimos 'usuario')
         const cardTareas = document.getElementById('card-modulo-tareas');
         if (cardTareas) {
-            if (!isAdmin && !isSupervisor && !isVisualizer) { // Solo administradores, supervisores o visualizadores
+            const isUser = session.rol === 'usuario';
+            if (!isAdmin && !isSupervisor && !isVisualizer && !isUser) { 
                 cardTareas.style.display = 'none';
             } else {
                 cardTareas.style.display = '';
@@ -332,15 +333,29 @@ const MainApp = {
             const tSem = tareasData.tareasSemanales || [];
             const pPrev = tareasData.planPreventivo || []; 
             const bit = tareasData.bitacora || [];
-            const tS = tareasData.inicioTareas || [];
             const uPrev = tareasData.usuariosPreventivo || [];
+            
+            // FILTRADO POR USUARIO (Aislamiento de tareas)
+            const session = api.getSession() || {};
+            const isAdmin = session.rol === 'admin' || session.rol === 'supervisor';
+            const curUser = (session.usuario || "").toLowerCase();
 
-            this.state.tareasRecurrentes = Array.isArray(tRec) ? tRec : [];
-            this.state.tareasSemanales = Array.isArray(tSem) ? tSem : [];
-            this.state.planPreventivo = Array.isArray(pPrev) ? pPrev : [];
+            const f = (arr) => {
+                if (isAdmin) return arr;
+                return arr.filter(item => {
+                    // Tolerancia a singular/plural (UsuarioSistema vs UsuarioSistemas)
+                    const u = (item.UsuarioSistema || item.usuariosistema || item.UsuarioSistemas || item.usuariosistemas || "").toString().trim().toLowerCase();
+                    return u === curUser || u === ""; 
+                });
+            };
+
+            this.state.tareasRecurrentes = f(tRec);
+            this.state.tareasSemanales = f(tSem);
+            this.state.planPreventivo = pPrev; // SIN FILTRO: El plan de mantenimiento es compartido
+            this.state.bitacora = f(bit);
+            
             this.state.usuariosPreventivo = Array.isArray(uPrev) ? uPrev : [];
-            this.state.bitacora = Array.isArray(bit) ? bit : [];
-            this.state.inicioTareas = Array.isArray(tS) ? tS : [];
+            this.state.inicioTareas = Array.isArray(tareasData.inicioTareas) ? tareasData.inicioTareas : [];
             this.state.usuariosAdmin = Array.isArray(usuarios) ? usuarios : [];
 
             ui.setConexionStatus('ok');
@@ -369,6 +384,8 @@ const MainApp = {
             ui.actualizarMiniStatsTareas(this.state);
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
+        if (vistaActual === 'entradas') ui.renderizarEntradas(this.state.entradas);
+        if (vistaActual === 'salidas') ui.renderizarSalidas(this.state.salidas);
         if (vistaActual === 'entregas') ui.renderizarEntregas(this.state.entregas);
         
         if (vistaActual === 'tareas-semanales' || this.state.moduloActual === 'tareas') {
@@ -376,7 +393,7 @@ const MainApp = {
         }
 
         if (vistaActual === 'usuarios') {
-            // Ya no hay render de responsables V1, ignorar
+            ui.renderizarResponsables(this.state.usuariosPreventivo);
         }
         if (vistaActual === 'grafica') {
             this.state.chartInstance = ui.renderizarGrafica(productos, chartInstance);
@@ -508,6 +525,7 @@ const MainApp = {
         document.getElementById('salida-fecha').value = hoy;
         const prodFecha = document.getElementById('prod-fecha');
         if (prodFecha) prodFecha.value = hoy;
+        if (document.getElementById('ts-fecha-inicio')) document.getElementById('ts-fecha-inicio').value = hoy;
         
         // Entregas
         const formEntrega = document.getElementById('form-entrega');
@@ -536,6 +554,20 @@ const MainApp = {
 
         const formUsuPrev = document.getElementById('form-usuario-preventivo');
         if (formUsuPrev) formUsuPrev.addEventListener('submit', e => this.registrarUsuarioPreventivo(e));
+
+        const formBitacora = document.getElementById('form-bitacora');
+        if (formBitacora) {
+            formBitacora.addEventListener('submit', async (e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                try {
+                    await this.registrarBitacoraDrive(e);
+                } catch (err) {
+                    console.error('Error Bitacora:', err);
+                    utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
+                }
+            });
+        }
 
         if(document.getElementById('btn-masivo-mensual')) document.getElementById('btn-masivo-mensual').addEventListener('click', () => this.masivoMensual());
         if(document.getElementById('btn-masivo-semanal')) document.getElementById('btn-masivo-semanal').addEventListener('click', () => this.masivoSemanal());

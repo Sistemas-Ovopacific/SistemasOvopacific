@@ -2,7 +2,7 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzLWBoE4xl4-wqG52dZf43Whutndi8AeqUYVuwYJrlv1sN0nFoZQx6BtE6OmIe1pvUypA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby2GtUckwJRN9RaTmpAraJbGsHJq4VZykvM1PuRQnlCy9X08E9yeMMSQGZF8Z50bDBeFA/exec';
 
 const api = {
     // Clave para localStorage
@@ -36,9 +36,11 @@ const api = {
     async login(usuario, password) {
         const u = encodeURIComponent(usuario);
         const p = encodeURIComponent(password);
+        console.log('[API] Intentando login para:', usuario);
         const res = await fetch(`${GAS_URL}?action=login&usuario=${u}&password=${p}&t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        console.log('[API] Respuesta del servidor:', data);
         if (data.error) throw new Error(data.error);
 
         // Almacenar sesión si es exitoso
