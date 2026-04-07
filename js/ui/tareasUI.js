@@ -217,10 +217,16 @@ Object.assign(window.ui, {
         const fEst = document.getElementById('filter-prev-estado') ? document.getElementById('filter-prev-estado').value : '';
 
         const filtrado = registros.filter(r => {
-            if (fUsr && !(r.Usuario||'').toLowerCase().includes(fUsr)) return false;
-            if (fAre && !(r.Area||'').toLowerCase().includes(fAre)) return false;
-            if (fMes && String(r.Mes) !== String(fMes)) return false;
-            if (fEst && String(r.Estado) !== String(fEst)) return false;
+            // Normalización robusta de campos
+            const rMes = r.Mes || r.mes || r.MES || "";
+            const rUsr = r.Usuario || r.usuario || r.USUARIO || "";
+            const rAre = r.Area || r.area || r.AREA || "";
+            const rEst = r.Estado || r.estado || r.ESTADO || "Pendiente";
+
+            if (fUsr && !String(rUsr).toLowerCase().includes(fUsr)) return false;
+            if (fAre && !String(rAre).toLowerCase().includes(fAre)) return false;
+            if (fMes && String(rMes) !== String(fMes)) return false;
+            if (fEst && String(rEst) !== String(fEst)) return false;
             return true;
         });
 
@@ -232,16 +238,31 @@ Object.assign(window.ui, {
         const mesesStr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
         filtrado.forEach(r => {
-            const mesName = mesesStr[Number(r.Mes) - 1] || r.Mes;
-            const estadoCls = r.Estado === 'Realizado' ? 'status-success' : 'status-danger';
+            const rFec = r.FechaRealizacion || r.fecharealizacion || r.FECHAREALIZACION || "-";
+            let rMes = r.Mes || r.mes || r.MES || "";
+            
+            // Fallback: Si no hay mes asignado, intentar deducirlo de la fecha si existe
+            if (!rMes && rFec && rFec !== "-") {
+                try {
+                    const parts = rFec.split('-');
+                    if (parts.length >= 2) rMes = parseInt(parts[1]);
+                } catch(e) {}
+            }
+
+            const rUsr = r.Usuario || r.usuario || r.USUARIO || "Sin Usuario";
+            const rAre = r.Area || r.area || r.AREA || "Sin Área";
+            const rEst = r.Estado || r.estado || r.ESTADO || "Pendiente";
+
+            const mesName = mesesStr[Number(rMes) - 1] || rMes || '?';
+            const estadoCls = rEst === 'Realizado' ? 'status-success' : 'status-danger';
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><input type="checkbox" class="prev-check" value="${r.id}"></td>
-                <td><strong>${utils.escHtml(r.Usuario)}</strong></td>
-                <td>${utils.escHtml(r.Area)}</td>
+                <td><strong>${utils.escHtml(rUsr)}</strong></td>
+                <td>${utils.escHtml(rAre)}</td>
                 <td><span class="category-tag">${mesName}</span></td>
-                <td><span class="status-badge ${estadoCls}">${utils.escHtml(r.Estado)}</span> <br> <span style="font-size:0.8em; color:#64748b;">${r.FechaRealizacion||'-'}</span></td>
+                <td><span class="status-badge ${estadoCls}">${utils.escHtml(rEst)}</span> <br> <span style="font-size:0.8em; color:#64748b;">${rFec}</span></td>
                 <td>
                     <button class="action-btn del" onclick="MainApp.eliminarPreventivoV3('${r.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </td>
