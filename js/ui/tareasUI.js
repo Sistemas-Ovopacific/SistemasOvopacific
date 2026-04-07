@@ -198,6 +198,7 @@ Object.assign(window.ui, {
                 <td style="font-size:0.85em; color:#64748b;">Creación: ${t.FechaCreacion || 'N/A'}<br>Fin: ${t.FechaFinalizacion || 'N/A'}</td>
                 <td><span class="status-badge ${estadoCls}">${utils.escHtml(t.Estado)}</span></td>
                 <td>
+                    <button class="action-btn" onclick="MainApp.abrirModalLogs('${t.id}')" title="Reportes Diarios" style="background:#6366f1; color:white;"><i class="fa-solid fa-clipboard-list"></i></button>
                     <button class="action-btn edit" onclick="MainApp.editarTareaSemanalV3('${t.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
                     <button class="action-btn del" onclick="MainApp.eliminarTareaSemanalV3('${t.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -206,69 +207,140 @@ Object.assign(window.ui, {
         });
     },
 
-    renderizarPreventivoV3(registros) {
-        const tbody = document.getElementById('tbody-tareas-preventivo');
+    renderizarLogsDiarios(logs) {
+        const tbody = document.getElementById('tbody-logs-diarios');
         if (!tbody) return;
         tbody.innerHTML = '';
-        
-        const fUsr = document.getElementById('filter-prev-usuario') ? document.getElementById('filter-prev-usuario').value.toLowerCase().trim() : '';
-        const fAre = document.getElementById('filter-prev-area') ? document.getElementById('filter-prev-area').value.toLowerCase().trim() : '';
-        const fMes = document.getElementById('filter-prev-mes') ? document.getElementById('filter-prev-mes').value : '';
-        const fEst = document.getElementById('filter-prev-estado') ? document.getElementById('filter-prev-estado').value : '';
 
-        const filtrado = registros.filter(r => {
-            // Normalización robusta de campos
-            const rMes = r.Mes || r.mes || r.MES || "";
-            const rUsr = r.Usuario || r.usuario || r.USUARIO || "";
-            const rAre = r.Area || r.area || r.AREA || "";
-            const rEst = r.Estado || r.estado || r.ESTADO || "Pendiente";
-
-            if (fUsr && !String(rUsr).toLowerCase().includes(fUsr)) return false;
-            if (fAre && !String(rAre).toLowerCase().includes(fAre)) return false;
-            if (fMes && String(rMes) !== String(fMes)) return false;
-            if (fEst && String(rEst) !== String(fEst)) return false;
-            return true;
-        });
-
-        if (filtrado.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No se encontraron mantenimientos</td></tr>';
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No hay reportes diarios para esta tarea</td></tr>';
             return;
         }
-        
-        const mesesStr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-        filtrado.forEach(r => {
-            const rFec = r.FechaRealizacion || r.fecharealizacion || r.FECHAREALIZACION || "-";
-            let rMes = r.Mes || r.mes || r.MES || "";
-            
-            // Fallback: Si no hay mes asignado, intentar deducirlo de la fecha si existe
-            if (!rMes && rFec && rFec !== "-") {
-                try {
-                    const parts = rFec.split('-');
-                    if (parts.length >= 2) rMes = parseInt(parts[1]);
-                } catch(e) {}
+        const sortedLogs = [...logs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        sortedLogs.forEach((log, idx) => {
+            let duracion = '-';
+            if (log.inicio && log.fin) {
+                const [h1, m1] = log.inicio.split(':').map(Number);
+                const [h2, m2] = log.fin.split(':').map(Number);
+                let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (diff < 0) diff += 24 * 60;
+                const hrs = Math.floor(diff / 60);
+                const mins = diff % 60;
+                duracion = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
             }
 
-            const rUsr = r.Usuario || r.usuario || r.USUARIO || "Sin Usuario";
-            const rAre = r.Area || r.area || r.AREA || "Sin Área";
-            const rEst = r.Estado || r.estado || r.ESTADO || "Pendiente";
-
-            const mesName = mesesStr[Number(rMes) - 1] || rMes || '?';
-            const estadoCls = rEst === 'Realizado' ? 'status-success' : 'status-danger';
-            
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><input type="checkbox" class="prev-check" value="${r.id}"></td>
-                <td><strong>${utils.escHtml(rUsr)}</strong></td>
-                <td>${utils.escHtml(rAre)}</td>
-                <td><span class="category-tag">${mesName}</span></td>
-                <td><span class="status-badge ${estadoCls}">${utils.escHtml(rEst)}</span> <br> <span style="font-size:0.8em; color:#64748b;">${rFec}</span></td>
+                <td>${log.fecha}</td>
+                <td>${log.inicio}</td>
+                <td>${log.fin}</td>
+                <td><strong>${duracion}</strong></td>
                 <td>
-                    <button class="action-btn del" onclick="MainApp.eliminarPreventivoV3('${r.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button class="action-btn del" onclick="MainApp.eliminarLogDiario(${idx})" title="Eliminar Log"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
-            tbody.appendChild(tr);
+            if (log.notas) {
+                const trNota = document.createElement('tr');
+                trNota.innerHTML = `<td colspan="5" style="font-size:0.8rem; color:#64748b; padding-top:0; border-top:none;">📝 ${utils.escHtml(log.notas)}</td>`;
+                tbody.appendChild(tr);
+                tbody.appendChild(trNota);
+            } else {
+                tbody.appendChild(tr);
+            }
         });
+    },
+
+    // Matriz Preventivo: filas = usuarios, columnas = meses × semanas
+    renderizarPreventivoV3(registros) {
+        // Alias para compatibilidad interna — delegamos a la nueva función
+        window.MainApp && window.MainApp.renderizarPreventivoMatriz
+            ? window.MainApp.renderizarPreventivoMatriz()
+            : this.renderizarMatrizPreventivo(registros, window.MainApp ? window.MainApp.state.usuariosPreventivo : []);
+    },
+
+    renderizarMatrizPreventivo(registros, usuarios) {
+        const wrap = document.getElementById('prev-matrix-wrap');
+        if (!wrap) return;
+
+        const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const SEMANAS = [1, 2, 3, 4];
+
+        const fUsr = (document.getElementById('filter-prev-usuario') || {}).value?.toLowerCase().trim() || '';
+        const fAre = (document.getElementById('filter-prev-area') || {}).value?.toLowerCase().trim() || '';
+
+        let usuariosFiltrados = (usuarios || []).filter(u => {
+            const nombre = (u.Nombre || u.nombre || u.Usuario || '').toLowerCase();
+            const area = (u.Area || u.area || '').toLowerCase();
+            return (!fUsr || nombre.includes(fUsr)) && (!fAre || area.includes(fAre));
+        });
+
+        if (usuariosFiltrados.length === 0) {
+            wrap.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8;"><i class="fa-solid fa-users" style="font-size:2rem;opacity:0.3;"></i><p style="margin-top:12px;">No hay usuarios en el directorio. Agrégalos en "Responsables / Equipos" o usa el formulario de arriba.</p></div>';
+            return;
+        }
+
+        // Construir índice de registros: key = "usuarioId_mes_semana"
+        const idx = {};
+        (registros || []).forEach(r => {
+            const uid = r.UsuarioId || r.usuarioid || r.usuario_id || '';
+            const mes = r.Mes || r.mes || '';
+            const sem = r.Semana || r.semana || '';
+            if (uid && mes && sem) {
+                idx[`${uid}_${mes}_${sem}`] = r;
+            }
+        });
+
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+
+        // Header row 1: Meses
+        html += '<thead><tr><th rowspan="2" style="position:sticky;left:0;background:#e8ecf5;z-index:2;padding:10px 14px;text-align:left;min-width:160px;">Usuario</th>';
+        html += '<th rowspan="2" style="position:sticky;left:160px;background:#e8ecf5;z-index:2;padding:10px 8px;text-align:left;min-width:110px;">Área</th>';
+        MESES.forEach(m => {
+            html += `<th colspan="4" style="text-align:center;background:#6366f1;color:#fff;padding:6px;border:1px solid rgba(255,255,255,0.2);">${m}</th>`;
+        });
+        html += '</tr><tr>';
+        MESES.forEach(() => {
+            SEMANAS.forEach(s => {
+                html += `<th style="text-align:center;background:#e8ecf5;padding:5px 3px;color:#64748b;font-size:0.68rem;letter-spacing:0.5px;">S${s}</th>`;
+            });
+        });
+        html += '</tr></thead><tbody>';
+
+        // Data rows
+        usuariosFiltrados.forEach((u, i) => {
+            const nombre = utils.escHtml(u.Nombre || u.nombre || u.Usuario || u.usuario || 'Sin Nombre');
+            const area = utils.escHtml(u.Area || u.area || '');
+            const uid = u.id || u.Id || '';
+            const bg = i % 2 === 0 ? '#ffffff' : '#f8faff';
+
+            html += `<tr style="background:${bg};">`;
+            html += `<td style="position:sticky;left:0;background:${bg};z-index:1;padding:8px 14px;font-weight:600;color:#1e293b;border-bottom:1px solid #e4e9f5;">${nombre}</td>`;
+            html += `<td style="position:sticky;left:160px;background:${bg};z-index:1;padding:8px 8px;color:#64748b;border-bottom:1px solid #e4e9f5;">${area}</td>`;
+
+            for (let m = 1; m <= 12; m++) {
+                for (let s = 1; s <= 4; s++) {
+                    const key = `${uid}_${m}_${s}`;
+                    const reg = idx[key];
+                    const hecho = !!reg;
+                    const fecha = reg ? (reg.FechaRealizacion || reg.fecha || '') : '';
+                    const fechaShort = fecha ? fecha.slice(5) : ''; // MM-DD
+                    const title = hecho ? `Realizado: ${fecha}` : 'Clic para registrar';
+                    const cursor = 'cursor:pointer;';
+                    const cellBg = hecho ? '#d1fae5' : 'transparent';
+                    const content = hecho
+                        ? `<span style="color:#059669;font-size:0.7rem;">✓<br>${fechaShort}</span>`
+                        : `<span style="color:#cbd5e1;font-size:1rem;">·</span>`;
+
+                    html += `<td onclick="MainApp.abrirModalPrevReg('${uid}','${nombre.replace(/'/g,"\\'")}','${m}','${s}')" title="${title}" style="text-align:center;padding:4px 2px;border:1px solid #e4e9f5;${cursor}background:${cellBg};">${content}</td>`;
+                }
+            }
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
     },
 
     

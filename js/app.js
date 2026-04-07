@@ -400,6 +400,64 @@ const MainApp = {
         }
     },
 
+    // Renderiza la matriz preventiva llamando a la función en tareasUI.js
+    renderizarPreventivoMatriz() {
+        ui.renderizarMatrizPreventivo(this.state.planPreventivo, this.state.usuariosPreventivo);
+    },
+
+    // Abre el modal para registrar un mantenimiento en una celda usuario×mes×semana
+    abrirModalPrevReg(usuarioId, nombreUsuario, mes, semana) {
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        document.getElementById('prev-reg-usuario-id').value = usuarioId;
+        document.getElementById('prev-reg-mes').value = mes;
+        document.getElementById('prev-reg-semana').value = semana;
+        document.getElementById('prev-reg-usuario').textContent = nombreUsuario;
+        document.getElementById('prev-reg-periodo').textContent = `${MESES[Number(mes)-1]} – Semana ${semana}`;
+        document.getElementById('prev-reg-fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('prev-reg-notas').value = '';
+        const modal = document.getElementById('modal-prev-registro');
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+    },
+
+    async guardarRegistroPreventivo(e) {
+        if (e) e.preventDefault();
+        const usuarioId = document.getElementById('prev-reg-usuario-id').value;
+        const mes = document.getElementById('prev-reg-mes').value;
+        const semana = document.getElementById('prev-reg-semana').value;
+        const fecha = document.getElementById('prev-reg-fecha').value;
+        const notas = document.getElementById('prev-reg-notas').value.trim();
+
+        if (!fecha) return;
+        const session = api.getSession();
+
+        const registro = {
+            id: 'PREV-' + Date.now(),
+            UsuarioId: usuarioId,
+            Mes: mes,
+            Semana: semana,
+            FechaRealizacion: fecha,
+            Estado: 'Realizado',
+            Notas: notas,
+            UsuarioSistema: session.usuario || 'Admin'
+        };
+
+        utils.mostrarLoader('Guardando mantenimiento...');
+        try {
+            await api.post({ action: 'addRegistroPreventivo', registro });
+            if (!this.state.planPreventivo) this.state.planPreventivo = [];
+            this.state.planPreventivo.push(registro);
+            document.getElementById('modal-prev-registro').style.display = 'none';
+            this.renderizarPreventivoMatriz();
+            utils.mostrarToast('Mantenimiento registrado ✓', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
     usarDatosDemo() {
         this.state.productos = [
             { ID: 'PRD-001', Nombre: 'Laptop Dell XPS', Categoria: 'Electrónica', Descripcion: 'Demo', Cantidad: 15, Unidad: 'Unidades' },
@@ -552,8 +610,33 @@ const MainApp = {
         const formPrev = document.getElementById('form-prev-masivo');
         if (formPrev) formPrev.addEventListener('submit', e => this.asignacionMasivaPreventivo(e));
 
+        // Modal registro preventivo por celda
+        const formPrevReg = document.getElementById('form-prev-reg');
+        if (formPrevReg) formPrevReg.addEventListener('submit', e => this.guardarRegistroPreventivo(e));
+        const closePrevReg = document.getElementById('close-modal-prev-reg');
+        if (closePrevReg) closePrevReg.addEventListener('click', () => { document.getElementById('modal-prev-registro').style.display = 'none'; });
+        const cancelPrevReg = document.getElementById('btn-prev-reg-cancel');
+        if (cancelPrevReg) cancelPrevReg.addEventListener('click', () => { document.getElementById('modal-prev-registro').style.display = 'none'; });
+        window.addEventListener('click', e => {
+            const m = document.getElementById('modal-prev-registro');
+            if (m && e.target === m) m.style.display = 'none';
+        });
+
         const formUsuPrev = document.getElementById('form-usuario-preventivo');
         if (formUsuPrev) formUsuPrev.addEventListener('submit', e => this.registrarUsuarioPreventivo(e));
+
+        // Quick-add user form en la sección Preventivo
+        const formUsuPrevQuick = document.getElementById('form-usuario-preventivo-quick');
+        if (formUsuPrevQuick) {
+            formUsuPrevQuick.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('uprev-nombre-q').value.trim();
+                const area = document.getElementById('uprev-area-q').value.trim();
+                if (!nombre || !area) return;
+                await this.registrarUsuarioPreventivo(null, nombre, area);
+                formUsuPrevQuick.reset();
+            });
+        }
 
         const formBitacora = document.getElementById('form-bitacora');
         if (formBitacora) {
@@ -568,6 +651,19 @@ const MainApp = {
                 }
             });
         }
+
+        // Logs Diarios
+        const formLogDiario = document.getElementById('form-log-diario');
+        if (formLogDiario) formLogDiario.addEventListener('submit', e => this.guardarLogDiario(e));
+        
+        const closeModalLogs = document.getElementById('close-modal-logs');
+        if (closeModalLogs) {
+            closeModalLogs.onclick = () => document.getElementById('modal-logs-diarios').style.display = 'none';
+        }
+        window.addEventListener('click', e => {
+            const modal = document.getElementById('modal-logs-diarios');
+            if (e.target === modal) modal.style.display = 'none';
+        });
 
         if(document.getElementById('btn-masivo-mensual')) document.getElementById('btn-masivo-mensual').addEventListener('click', () => this.masivoMensual());
         if(document.getElementById('btn-masivo-semanal')) document.getElementById('btn-masivo-semanal').addEventListener('click', () => this.masivoSemanal());

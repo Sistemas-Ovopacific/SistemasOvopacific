@@ -152,16 +152,23 @@ Object.assign(window.MainApp, {
 
         const session = api.getSession();
         const isEdit = !!id;
-        
-        const payload = {
+
+        // Para crear: SIN LogsDiarios (compatibilidad con GAS que no conoce el campo)
+        // Para editar: CON LogsDiarios (la acción updateTareaSemanal ya lo maneja)
+        const basePayload = {
             id: isEdit ? id : 'TS-' + Date.now(),
             Nombre: nombre,
-            Semana: 0, // Ya no se usa, pero mantenemos compatibilidad por ahora
+            Semana: 0,
             FechaCreacion: fInicio,
             FechaFinalizacion: fFin,
-            Estado: isEdit ? this.state.tareasSemanales.find(t=>t.id===id).Estado : 'Pendiente',
-            UsuarioSistema: session.usuario || 'Admin'
+            Estado: isEdit ? (this.state.tareasSemanales.find(t=>t.id===id) || {}).Estado || 'Pendiente' : 'Pendiente',
+            UsuarioSistema: session.usuario || 'Admin',
         };
+
+        // Solo incluir LogsDiarios al editar (el GAS de addTareaSemanal puede no conocerlo)
+        const payload = isEdit
+            ? { ...basePayload, LogsDiarios: (this.state.tareasSemanales.find(t=>t.id===id) || {}).LogsDiarios || '[]' }
+            : basePayload;
 
         const action = isEdit ? 'updateTareaSemanal' : 'addTareaSemanal';
         const msg = isEdit ? 'Actualizada' : 'Semanal registrada';
@@ -169,12 +176,15 @@ Object.assign(window.MainApp, {
         utils.mostrarLoader('Guardando semanal...');
         try {
             await api.post({ action, ...(isEdit ? { tarea: payload } : payload) });
-            
+
+            // Asegurarnos de que el objeto local siempre tenga LogsDiarios
+            const payloadConLogs = { ...payload, LogsDiarios: payload.LogsDiarios || '[]' };
+
             if (isEdit) {
                 const idx = this.state.tareasSemanales.findIndex(t => String(t.id) === String(id));
-                if (idx !== -1) this.state.tareasSemanales[idx] = payload;
+                if (idx !== -1) this.state.tareasSemanales[idx] = payloadConLogs;
             } else {
-                this.state.tareasSemanales.push(payload);
+                this.state.tareasSemanales.push(payloadConLogs);
             }
 
             this.cancelarEdicionSemanalV3();
@@ -183,6 +193,7 @@ Object.assign(window.MainApp, {
             utils.mostrarToast(msg, 'success');
         } catch (err) {
             utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+            console.error('[registrarTareaSemanalV3] Error:', err);
         } finally {
             utils.ocultarLoader();
         }
@@ -249,6 +260,85 @@ Object.assign(window.MainApp, {
             utils.mostrarToast('Actualizado', 'success');
         } catch (err) {
             utils.mostrarToast('Error', 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    abrirModalLogs(id) {
+        const t = this.state.tareasSemanales.find(x => String(x.id) === String(id));
+        if (!t) return;
+        
+        this.currentTaskForLogs = t;
+        document.getElementById('modal-log-task-name').textContent = t.Nombre;
+        document.getElementById('modal-log-task-id').textContent = 'ID: ' + t.id;
+        
+        let logs = [];
+        try {
+            logs = JSON.parse(t.LogsDiarios || '[]');
+        } catch(e) { console.error("Error parse LogsDiarios:", e); }
+        
+        ui.renderizarLogsDiarios(logs);
+        
+        document.getElementById('form-log-diario').reset();
+        document.getElementById('log-fecha').value = new Date().toISOString().split('T')[0];
+        
+        document.getElementById('modal-logs-diarios').style.display = 'flex';
+        document.getElementById('modal-logs-diarios').style.alignItems = 'center';
+        document.getElementById('modal-logs-diarios').style.justifyContent = 'center';
+    },
+
+    async guardarLogDiario(e) {
+        if (e) e.preventDefault();
+        if (!this.currentTaskForLogs) return;
+
+        const fecha = document.getElementById('log-fecha').value;
+        const inicio = document.getElementById('log-inicio').value;
+        const fin = document.getElementById('log-fin').value;
+        const notas = document.getElementById('log-notas').value.trim();
+
+        if (!fecha || !inicio || !fin) return;
+
+        let logs = [];
+        try {
+            logs = JSON.parse(this.currentTaskForLogs.LogsDiarios || '[]');
+        } catch(e) {}
+
+        logs.push({ fecha, inicio, fin, notas });
+        this.currentTaskForLogs.LogsDiarios = JSON.stringify(logs);
+
+        utils.mostrarLoader('Guardando...');
+        try {
+            await api.post({ action: 'updateTareaSemanal', tarea: this.currentTaskForLogs });
+            ui.renderizarLogsDiarios(logs);
+            document.getElementById('form-log-diario').reset();
+            document.getElementById('log-fecha').value = new Date().toISOString().split('T')[0];
+            utils.mostrarToast('Reporte guardado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarLogDiario(idx) {
+        if (!this.currentTaskForLogs || !confirm('¿Eliminar reporte?')) return;
+
+        let logs = [];
+        try {
+            logs = JSON.parse(this.currentTaskForLogs.LogsDiarios || '[]');
+        } catch(e) {}
+
+        logs.splice(idx, 1);
+        this.currentTaskForLogs.LogsDiarios = JSON.stringify(logs);
+
+        utils.mostrarLoader('Eliminando...');
+        try {
+            await api.post({ action: 'updateTareaSemanal', tarea: this.currentTaskForLogs });
+            ui.renderizarLogsDiarios(logs);
+            utils.mostrarToast('Eliminado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
             utils.ocultarLoader();
         }
@@ -332,29 +422,31 @@ Object.assign(window.MainApp, {
     },
 
     // ── ACCIONES USUARIOS ──
-    async registrarUsuarioPreventivo(e) {
+    async registrarUsuarioPreventivo(e, nombreOverride, areaOverride) {
         if (e) e.preventDefault();
-        const nom = document.getElementById('uprev-nombre').value.trim();
-        const area = document.getElementById('uprev-area').value.trim();
-        if(!nom || !area) return;
+        const nom = nombreOverride || document.getElementById('uprev-nombre').value.trim();
+        const area = areaOverride || document.getElementById('uprev-area').value.trim();
+        if (!nom || !area) return;
 
         const session = api.getSession();
         utils.mostrarLoader('Guardando usuario...');
         try {
-            const u = { 
-                id: 'UPREV-'+Date.now(), 
-                Usuario: nom, // Cambiado de Nombre a Usuario para coincidir con la UI
+            const u = {
+                id: 'UPREV-' + Date.now(),
+                Nombre: nom,   // Coincide con la columna en Google Sheets
                 Area: area,
-                UsuarioSistema: session.usuario || 'Admin' 
+                UsuarioSistema: session.usuario || 'Admin'
             };
             await api.post({ action: 'addUsuarioPreventivo', usuario: u });
-            if(!this.state.usuariosPreventivo) this.state.usuariosPreventivo = [];
+            if (!this.state.usuariosPreventivo) this.state.usuariosPreventivo = [];
             this.state.usuariosPreventivo.push(u);
             document.getElementById('form-usuario-preventivo').reset();
             ui.renderizarResponsables(this.state.usuariosPreventivo);
+            // También re-renderizar preventivo para que el nuevo usuario aparezca en los filtros
+            ui.renderizarPreventivoV3(this.state.planPreventivo);
             utils.mostrarToast('Usuario guardado', 'success');
-        } catch(err) {
-            utils.mostrarToast('Error', 'danger');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
             utils.ocultarLoader();
         }
