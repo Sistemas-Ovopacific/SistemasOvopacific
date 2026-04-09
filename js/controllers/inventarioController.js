@@ -69,12 +69,8 @@ Object.assign(window.MainApp, {
             const res = await api.post({ action: 'guardarProducto', producto });
             utils.mostrarToast(res.mensaje || 'Producto guardado', 'success');
 
-            const idx = this.state.productos.findIndex(p => String(p.ID) === String(finalId));
-            if (idx !== -1) this.state.productos[idx] = producto;
-            else this.state.productos.push(producto);
-
             this.cerrarModal();
-            this.actualizarUI();
+            await this.cargarSoloInventario();
         } catch (err) {
             utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
         } finally {
@@ -90,11 +86,9 @@ Object.assign(window.MainApp, {
         try {
             const res = await api.post({ action: 'eliminarProducto', id: idLimpio });
             
-            // Si el servidor confirma éxito, actualizamos el estado local
-            this.state.productos = this.state.productos.filter(p => String(p.ID).trim() !== idLimpio);
-            
+            // Recargar datos inmediatamente de forma rápida
+            await this.cargarSoloInventario();
             utils.mostrarToast(res.mensaje || 'Producto eliminado', 'success');
-            this.actualizarUI();
         } catch (err) {
             console.error('Error al eliminar:', err);
             utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
@@ -124,14 +118,15 @@ Object.assign(window.MainApp, {
         utils.mostrarLoader('Registrando entrada...');
         try {
             const res = await api.post({ action: 'registrarEntrada', movimiento });
-            utils.mostrarToast(`Entrada registrada. Stock: ${res.stock_nuevo}`, 'success');
+            // Actualización Optimista: Actualizar localmente primero para velocidad
+            if (prod) prod.Cantidad = res.stock_nuevo;
+            this.actualizarUI();
 
-            prod.Cantidad = res.stock_nuevo;
-            this.state.entradas.push({ ...movimiento, ID_Movimiento: res.id_movimiento });
-
+            // Sincronización rápida en segundo plano para verificar con el servidor
+            await this.cargarSoloInventario();
+            
             document.getElementById('form-entrada').reset();
             document.getElementById('entrada-fecha').value = new Date().toISOString().split('T')[0];
-            this.actualizarUI();
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
@@ -161,16 +156,16 @@ Object.assign(window.MainApp, {
         utils.mostrarLoader('Registrando salida...');
         try {
             const res = await api.post({ action: 'registrarSalida', movimiento });
-            utils.mostrarToast(`Salida registrada. Stock: ${res.stock_nuevo}`, 'success');
+            // Actualización Optimista: Actualizar localmente primero para velocidad
+            if (prod) prod.Cantidad = res.stock_nuevo;
+            this.actualizarUI();
 
-            prod.Cantidad = res.stock_nuevo;
-            this.state.salidas.push({ ...movimiento, ID_Movimiento: res.id_movimiento });
-
+            // Sincronización rápida en segundo plano
+            await this.cargarSoloInventario();
+            
             document.getElementById('form-salida').reset();
             document.getElementById('salida-fecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('salida-stock-info').innerHTML = `<i class="fa-solid fa-info-circle"></i> Seleccione un producto`;
-            
-            this.actualizarUI();
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
@@ -219,12 +214,12 @@ Object.assign(window.MainApp, {
             const res = await api.post({ action: 'registrarEntrega', entrega: nuevaEntrega });
             utils.mostrarToast(res.mensaje || 'Entrega registrada correctamente', 'success');
             
-            this.state.entregas.push(nuevaEntrega);
+            await this.cargarSoloInventario();
             
             document.getElementById('form-entrega').reset();
             document.getElementById('entrega-fecha').value = new Date().toISOString().split('T')[0];
             
-            this.filtrarEntregas();
+            if (this.filtrarEntregas) this.filtrarEntregas();
         } catch (err) {
             utils.mostrarToast('Error al registrar: ' + err.message, 'danger');
         } finally {

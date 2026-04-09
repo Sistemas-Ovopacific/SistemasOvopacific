@@ -384,6 +384,33 @@ const MainApp = {
         }
     },
 
+    /**
+     * Sincronización rápida: Solo carga productos y movimientos.
+     * Ideal para operaciones de almacén que no requieren datos de tareas.
+     */
+    async cargarSoloInventario() {
+        utils.mostrarLoader('Actualizando inventario...');
+        try {
+            const [prods, ents, sals, entregas] = await Promise.all([
+                api.get('getProductos'),
+                api.get('getEntradas'),
+                api.get('getSalidas'),
+                api.get('getEntregas').catch(() => [])
+            ]);
+
+            this.state.productos = Array.isArray(prods) ? prods : [];
+            this.state.entradas  = Array.isArray(ents)  ? ents  : [];
+            this.state.salidas   = Array.isArray(sals)  ? sals  : [];
+            this.state.entregas  = Array.isArray(entregas) ? entregas : [];
+
+            this.actualizarUI();
+        } catch (err) {
+            console.error('[SYNC FAST] Error:', err);
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
     actualizarUI() {
         const { vistaActual, productos, entradas, salidas, chartInstance } = this.state;
         ui.actualizarMiniStats(productos);
@@ -442,6 +469,7 @@ const MainApp = {
     async guardarRegistroPreventivo(e) {
         if (e) e.preventDefault();
         const usuarioId = document.getElementById('prev-reg-usuario-id').value;
+        const nombre = document.getElementById('prev-reg-usuario').textContent;
         const mes = document.getElementById('prev-reg-mes').value;
         const semana = document.getElementById('prev-reg-semana').value;
         const fecha = document.getElementById('prev-reg-fecha').value;
@@ -452,24 +480,20 @@ const MainApp = {
         const session = api.getSession();
         utils.mostrarLoader('Guardando mantenimiento...');
         try {
-            // ENVIO BRUTO CON TODO EL MAPEO POSIBLE (Para compensar desvíos en el Excel)
+            // ENVIO AL BACKEND con la acción corregida 'addRegistroPreventivo'
             const res = await api.post({ 
-                action: 'addPreventivo', 
-                id: 'PREV-' + Date.now(),
-                Usuario: document.getElementById('prev-reg-usuario')?.textContent || '', // B
-                Area: '', // C
-                Actividad: '', // D
-                Equipo: '', // E
-                Mes: mes, // F (6)
-                Estado: 'Realizado', // G (7)
-                Estados: 'Realizado',
-                Semana: semana, // H (8)
-                Fecha: fecha, // I (9)
-                FechaRealizacion: fecha,
-                Notas: notas, // J (10)
-                UsuarioSistema: session.usuario || 'Admin', // K (11)
-                UsuarioSistemas: session.usuario || 'Admin',
-                quien_registro: session.usuario || 'Admin'
+                action: 'addRegistroPreventivo', 
+                registro: {
+                    id: 'PREV-' + Date.now(),
+                    Usuario: nombre, // Columna B (Mapeo por Nombre para coincidir con registros previos)
+                    UsuarioId: usuarioId, // Como respaldo
+                    Mes: mes,
+                    Semana: semana,
+                    Estados: 'Realizado', // Columna G (Plural según Excel)
+                    Fecha: fecha,        // Columna I
+                    Notas: notas || 'Mantenimiento Individual',
+                    UsuarioSistema: session.usuario || 'Admin'
+                }
             });
 
             // Forzar recarga completa para sincronizar con el servidor
