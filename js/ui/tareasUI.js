@@ -795,7 +795,7 @@ Object.assign(window.ui, {
             tr.innerHTML = `
                <td><strong>${utils.escHtml(u.Nombre)}</strong></td>
                <td>${utils.escHtml(u.Area)}</td>
-               <td><button class="action-btn del" onclick="MainApp.eliminarResponsable('${u.id || u.ID}')"><i class="fa-solid fa-trash"></i></button></td>
+               <td><button class="action-btn del" onclick="MainApp.eliminarUsuarioPreventivo('${u.id || u.ID}', '${utils.escAttr(u.Nombre || 'Usuario')}')"><i class="fa-solid fa-trash"></i></button></td>
             `;
             tbody.appendChild(tr);
         });
