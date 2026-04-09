@@ -222,11 +222,17 @@
 }
 
 /* Panel sin padding para tablas */
-.panel-no-padding .panel-body { padding: 0 !important; overflow: hidden; }
+.panel-no-padding .panel-body { padding: 0 !important; overflow: visible; }
 .panel-no-padding .table-wrap, 
 .panel-no-padding .preventivo-scroll-wrap { border: none; border-radius: 0; }
 
 /* Scrollbar Personalizado para Matrices (Muy visible) */
+#prev-matrix-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
 #prev-matrix-wrap::-webkit-scrollbar {
     height: 12px;
 }
