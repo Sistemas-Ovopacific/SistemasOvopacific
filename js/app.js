@@ -570,6 +570,52 @@ const MainApp = {
         }
     },
 
+    async registrarUsuarioPreventivo(e, nombreProp, areaProp) {
+        if (e) e.preventDefault();
+        
+        // Intentar obtener valores de diferentes formularios posibles (Quick-add o Formulario Completo)
+        const nombre = nombreProp || (document.getElementById('uprev-nombre') ? document.getElementById('uprev-nombre').value.trim() : '');
+        const area = areaProp || (document.getElementById('uprev-area') ? document.getElementById('uprev-area').value.trim() : '');
+        
+        if (!nombre) {
+            utils.mostrarToast('Nombre del técnico es obligatorio', 'warning');
+            return;
+        }
+        
+        const session = api.getSession();
+        utils.mostrarLoader('Guardando usuario...');
+        try {
+            await api.post({
+                action: 'addUsuarioPreventivo',
+                usuario: {
+                    id: 'UPREV-' + Date.now(),
+                    Nombre: nombre,
+                    Area: area || 'General',
+                    UsuarioSistema: session.usuario || 'Admin'
+                }
+            });
+            await this.cargarTodosLosDatos();
+            this.renderizarPreventivoMatriz();
+            utils.mostrarToast('Usuario agregado con éxito ✓', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al agregar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    agregarUsuarioMatriz() {
+        // Alias para el botón rápido de la matriz
+        const nombre = (document.getElementById('filter-prev-usuario') || {}).value?.trim();
+        const area = (document.getElementById('filter-prev-area') || {}).value?.trim();
+        
+        if (!nombre) {
+            utils.mostrarToast('Escribe el nombre del técnico en el buscador para agregarlo', 'warning');
+            return;
+        }
+        this.registrarUsuarioPreventivo(null, nombre, area || 'Producción');
+    },
+
     usarDatosDemo() {
         this.state.productos = [
             { ID: 'PRD-001', Nombre: 'Laptop Dell XPS', Categoria: 'Electrónica', Descripcion: 'Demo', Cantidad: 15, Unidad: 'Unidades' },

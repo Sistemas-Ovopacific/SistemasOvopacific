@@ -29,7 +29,20 @@ Object.assign(window.ui, {
         
         let users = uniqueUsers;
         if (!isAdminStrict) {
-            users = uniqueUsers.filter(u => u.toLowerCase() === curUserRaw.toLowerCase());
+            if (session.rol === 'supervisor') {
+                // El supervisor ve su nombre Y el de sus técnicos asignados
+                const misTecnicos = (appState.usuariosPreventivo || [])
+                    .filter(u => (u.UsuarioSistema || u.usuariosistema || '').toLowerCase().trim() === curUserRaw.toLowerCase())
+                    .map(u => (u.Nombre || u.nombre || '').trim().toLowerCase());
+                
+                users = uniqueUsers.filter(u => 
+                    u.toLowerCase() === curUserRaw.toLowerCase() || 
+                    misTecnicos.includes(u.toLowerCase())
+                );
+            } else {
+                // Otros roles (Usuario, Visualizador) solo se ven a sí mismos
+                users = uniqueUsers.filter(u => u.toLowerCase() === curUserRaw.toLowerCase());
+            }
         }
 
         users = users.sort();
@@ -324,7 +337,8 @@ Object.assign(window.ui, {
             const usuSist = (u.UsuarioSistema || u.usuariosistema || '').toLowerCase();
             
             // Filtro por selector (para supervisor/admin)
-            if (selectedUsr !== '' && !nombre.includes(selectedUsr) && !usuSist.includes(selectedUsr)) return false;
+            const isAdminCreated = usuSist === 'admin' || usuSist === '';
+            if (selectedUsr !== '' && !nombre.includes(selectedUsr) && !usuSist.includes(selectedUsr) && !isAdminCreated) return false;
             
             // Filtro por búsqueda manual
             return (!fUsr || nombre.includes(fUsr)) && (!fAre || area.includes(fAre));
@@ -584,10 +598,21 @@ Object.assign(window.ui, {
         const filtrado = registros.filter(b => {
             const bUsr = String(b.UsuarioSistema || b.UsuarioSistemas || b.usuariosistema || b.usuariosistemas || b.Usuario || b.usuario || '').toLowerCase().trim();
             
-            // Administradores y Supervisores ven todo
-            if (isAdmin || isSupervisor) {
+            // Administradores ven todo. Supervisores solo su equipo.
+            if (isAdmin) {
                 if (selectedUsr !== '' && bUsr !== selectedUsr) return false;
                 return true;
+            }
+            if (isSupervisor) {
+                const misTecnicos = (window.MainApp.state.usuariosPreventivo || [])
+                    .filter(u => (u.UsuarioSistema || u.usuariosistema || '').toLowerCase().trim() === curUser)
+                    .map(u => (u.Nombre || u.nombre || '').trim().toLowerCase());
+                const esDeMiEquipo = bUsr === curUser || misTecnicos.includes(bUsr);
+                
+                if (selectedUsr !== '') {
+                    return bUsr === selectedUsr && esDeMiEquipo;
+                }
+                return esDeMiEquipo;
             }
             
             // Otros (Usuarios o Visualizadores) ven lo propio o lo seleccionado si tienen permiso
