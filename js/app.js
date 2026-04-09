@@ -3,6 +3,7 @@
 // ============================================================
 
 const MainApp = {
+    version: "1.1-RESCUE",
     // Estado Global
     state: {
         productos: [],
@@ -19,6 +20,7 @@ const MainApp = {
     },
 
     init() {
+        console.log("%c SISTEMAS OVOPACIFIC - VERSION: 1.1-RESCUE ", "background: #6366f1; color: white; padding: 5px; border-radius: 5px;");
         this.inicializarNavegacion();
         this.inicializarEventos();
         this.inicializarLogin();
@@ -82,6 +84,16 @@ const MainApp = {
             }
         }
         
+        // Ocultar filtros de supervisor si no es Admin/Supervisor (NUCLEAR)
+        const filtrosSupervisor = document.getElementById('prev-filtros-supervisor');
+        if (filtrosSupervisor) {
+            if (isAdmin || isSupervisor) {
+                filtrosSupervisor.style.setProperty('display', 'flex', 'important');
+            } else {
+                filtrosSupervisor.style.setProperty('display', 'none', 'important');
+            }
+        }
+
         // Deshabilitar botones de escritura si es visualizador
         const writeButtons = document.querySelectorAll('.btn-primary, .prev-add-btn, button[type="submit"], .action-btn.del, .action-btn.edit');
         writeButtons.forEach(btn => {
@@ -343,18 +355,21 @@ const MainApp = {
             const f = (arr) => {
                 if (isAdmin) return arr;
                 return arr.filter(item => {
-                    // Tolerancia a singular/plural (UsuarioSistema vs UsuarioSistemas)
-                    const u = (item.UsuarioSistema || item.usuariosistema || item.UsuarioSistemas || item.usuariosistemas || "").toString().trim().toLowerCase();
-                    return u === curUser || u === ""; 
+                    const uStr = (item.UsuarioSistema || item.usuariosistema || item.UsuarioSistemas || item.usuariosistemas || "").toString().trim().toLowerCase();
+                    const uDoc = (item.Usuario || item.usuario || item.UsuarioId || "").toString().trim().toLowerCase();
+                    // Fallback: Si el sistema no registro quien hizo la accion (uStr vacio), permitimos ver si el usuario asignado coincide (uDoc)
+                    return uStr === curUser || uDoc === curUser || uStr === ""; 
                 });
             };
 
             this.state.tareasRecurrentes = f(tRec);
             this.state.tareasSemanales = f(tSem);
-            this.state.planPreventivo = pPrev; // SIN FILTRO: El plan de mantenimiento es compartido
             this.state.bitacora = f(bit);
-            
-            this.state.usuariosPreventivo = Array.isArray(uPrev) ? uPrev : [];
+
+            // La matriz preventiva y los usuarios del sistema se ven para todos, sin filtro
+            this.state.planPreventivo = pPrev;
+            this.state.usuariosPreventivo = uPrev;
+
             this.state.inicioTareas = Array.isArray(tareasData.inicioTareas) ? tareasData.inicioTareas : [];
             this.state.usuariosAdmin = Array.isArray(usuarios) ? usuarios : [];
 
@@ -377,6 +392,7 @@ const MainApp = {
 
         const enModuloTareas = vistaActual === 'inicio-tareas-view' || this.state.moduloActual === 'tareas';
         if (enModuloTareas) {
+            ui.renderizarDashboardTareas(this.state);
             ui.renderizarTareasMensualesV3(this.state.tareasRecurrentes);
             ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
             ui.renderizarPreventivoV3(this.state.planPreventivo);
@@ -413,7 +429,9 @@ const MainApp = {
         document.getElementById('prev-reg-semana').value = semana;
         document.getElementById('prev-reg-usuario').textContent = nombreUsuario;
         document.getElementById('prev-reg-periodo').textContent = `${MESES[Number(mes)-1]} – Semana ${semana}`;
-        document.getElementById('prev-reg-fecha').value = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        document.getElementById('prev-reg-fecha').value = now.toISOString().split('T')[0];
+        document.getElementById('prev-reg-hora').value = now.toTimeString().slice(0, 5);
         document.getElementById('prev-reg-notas').value = '';
         const modal = document.getElementById('modal-prev-registro');
         modal.style.display = 'flex';
@@ -427,27 +445,35 @@ const MainApp = {
         const mes = document.getElementById('prev-reg-mes').value;
         const semana = document.getElementById('prev-reg-semana').value;
         const fecha = document.getElementById('prev-reg-fecha').value;
+        const hora = document.getElementById('prev-reg-hora').value;
         const notas = document.getElementById('prev-reg-notas').value.trim();
 
-        if (!fecha) return;
+        if (!fecha || !hora) return;
         const session = api.getSession();
-
-        const registro = {
-            id: 'PREV-' + Date.now(),
-            UsuarioId: usuarioId,
-            Mes: mes,
-            Semana: semana,
-            FechaRealizacion: fecha,
-            Estado: 'Realizado',
-            Notas: notas,
-            UsuarioSistema: session.usuario || 'Admin'
-        };
-
         utils.mostrarLoader('Guardando mantenimiento...');
         try {
-            await api.post({ action: 'addRegistroPreventivo', registro });
-            if (!this.state.planPreventivo) this.state.planPreventivo = [];
-            this.state.planPreventivo.push(registro);
+            // ENVIO BRUTO CON TODO EL MAPEO POSIBLE (Para compensar desvíos en el Excel)
+            const res = await api.post({ 
+                action: 'addPreventivo', 
+                id: 'PREV-' + Date.now(),
+                Usuario: document.getElementById('prev-reg-usuario')?.textContent || '', // B
+                Area: '', // C
+                Actividad: '', // D
+                Equipo: '', // E
+                Mes: mes, // F (6)
+                Estado: 'Realizado', // G (7)
+                Estados: 'Realizado',
+                Semana: semana, // H (8)
+                Fecha: fecha, // I (9)
+                FechaRealizacion: fecha,
+                Notas: notas, // J (10)
+                UsuarioSistema: session.usuario || 'Admin', // K (11)
+                UsuarioSistemas: session.usuario || 'Admin',
+                quien_registro: session.usuario || 'Admin'
+            });
+
+            // Forzar recarga completa para sincronizar con el servidor
+            await this.cargarTodosLosDatos();
             document.getElementById('modal-prev-registro').style.display = 'none';
             this.renderizarPreventivoMatriz();
             utils.mostrarToast('Mantenimiento registrado ✓', 'success');

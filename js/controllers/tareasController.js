@@ -204,8 +204,8 @@ Object.assign(window.MainApp, {
         if (!t) return;
         document.getElementById('ts-id').value = t.id;
         document.getElementById('ts-nombre').value = t.Nombre;
-        document.getElementById('ts-fecha-inicio').value = t.FechaCreacion || '';
-        document.getElementById('ts-fecha-fin').value = t.FechaFinalizacion || '';
+        document.getElementById('ts-fecha-inicio').value = (t.FechaCreacion || '').split('T')[0];
+        document.getElementById('ts-fecha-fin').value = (t.FechaFinalizacion || '').split('T')[0];
         
         document.getElementById('btn-save-ts').innerHTML = '<i class="fa-solid fa-save"></i> Actualizar Tarea';
         document.getElementById('btn-cancel-ts').style.display = 'inline-block';
@@ -281,7 +281,10 @@ Object.assign(window.MainApp, {
         ui.renderizarLogsDiarios(logs);
         
         document.getElementById('form-log-diario').reset();
-        document.getElementById('log-fecha').value = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        document.getElementById('log-fecha').value = now.toISOString().split('T')[0];
+        document.getElementById('log-inicio').value = now.toTimeString().slice(0, 5);
+        document.getElementById('log-fin').value = now.toTimeString().slice(0, 5);
         
         document.getElementById('modal-logs-diarios').style.display = 'flex';
         document.getElementById('modal-logs-diarios').style.alignItems = 'center';
@@ -350,26 +353,31 @@ Object.assign(window.MainApp, {
     async asignacionMasivaPreventivo(e) {
         if (e) e.preventDefault();
         const mes = document.getElementById('prev-masivo-mes').value;
-        const fecha = document.getElementById('prev-masivo-fecha').value;
+        const semana = document.getElementById('prev-masivo-semana').value;
+        const fecha = new Date().toISOString().split('T')[0];
 
-        if (!mes) return;
+        if (!mes || !semana) return;
 
         const session = api.getSession();
         utils.mostrarLoader('Asignando masivamente...');
         try {
             const res = await api.post({ 
                 action: 'addPreventivoMasivo', 
-                Mes: mes, 
+                Mes: mes, // Col F
+                Estado: 'Realizado', // Col G
+                Estados: 'Realizado',
+                Semana: semana, // Col H
+                Fecha: fecha, // Col I
                 FechaRealizacion: fecha,
-                UsuarioSistema: session.usuario || 'Admin' 
+                UsuarioSistema: session.usuario || 'Admin', // Col K
+                UsuarioSistemas: session.usuario || 'Admin',
+                quien_registro: session.usuario || 'Admin'
             });
             
-            if (res.success && res.generados) {
-                this.state.planPreventivo.push(...res.generados);
-            }
+            // Forzar recarga completa y renderizado
+            await MainApp.cargarTodosLosDatos();
+            
             document.getElementById('form-prev-masivo').reset();
-            ui.renderizarPreventivoV3(this.state.planPreventivo);
-            ui.renderizarDashboardTareas(this.state);
             utils.mostrarToast('Asignación registrada a todos los usuarios', 'success');
         } catch (err) {
             utils.mostrarToast('Error: ' + err.message, 'danger');

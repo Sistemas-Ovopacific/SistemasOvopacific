@@ -23,9 +23,24 @@ Object.assign(window.ui, {
             ...appState.tareasSemanales,
             ...appState.planPreventivo,
             ...appState.bitacora,
-            ...appState.planPreventivo // Responsables también están aquí
+            ...appState.usuariosPreventivo
         ];
-        const users = [...new Set(allTasks.map(t => t.UsuarioSistema || t.Usuariosistema || t.UsuarioSist || '').filter(u => u !== ''))];
+        
+        let usersRaw = allTasks.map(t => {
+            return (t.UsuarioSistema || t.usuariosistema || t.Usuario || t.usuario || '').trim();
+        }).filter(u => u !== '' && u.toLowerCase() !== 'admin');
+
+        // Eliminar duplicados
+        let uniqueUsers = [...new Set(usersRaw)];
+
+        // Inteligencia básica: Si existe "yolfranlle" y "yol", eliminar "yol"
+        const users = uniqueUsers.filter(u => {
+            const lower = u.toLowerCase();
+            if (lower === 'yol') {
+                return !uniqueUsers.some(other => other.toLowerCase().startsWith('yol') && other.length > 3);
+            }
+            return true;
+        }).sort();
         
         // Si no hay usuarios en los registros, al menos mostrar el selector vacío o con "Todos"
         const currentSelected = appState[`selectedUser_${modulo}`] || '';
@@ -47,12 +62,21 @@ Object.assign(window.ui, {
         const tbody = document.getElementById('tbody-tareas-mensuales');
         if (!tbody) return;
         tbody.innerHTML = '';
+
+        this.renderizarSelectorVisualizador('visualizer-filter-recurrentes', 'recurrentes');
+
+        const session = api.getSession();
+        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
+        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_recurrentes || '').toLowerCase().trim() : '';
         
         const fNom = document.getElementById('filter-tm-nombre') ? document.getElementById('filter-tm-nombre').value.toLowerCase().trim() : '';
         const fMes = document.getElementById('filter-tm-mes') ? document.getElementById('filter-tm-mes').value : '';
         const fEst = document.getElementById('filter-tm-estado') ? document.getElementById('filter-tm-estado').value : '';
 
         const filtrado = tareas.filter(t => {
+            const tUsr = (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim();
+            if (selectedUsr !== '' && tUsr !== selectedUsr) return false;
+            
             if (fNom && !(t.Nombre||'').toLowerCase().includes(fNom)) return false;
             if (fMes && String(t.Mes) !== String(fMes)) return false;
             if (fEst && String(t.Estado) !== String(fEst)) return false;
@@ -174,11 +198,23 @@ Object.assign(window.ui, {
         const tbody = document.getElementById('tbody-tareas-semanales');
         if (!tbody) return;
         tbody.innerHTML = '';
+
+        this.renderizarSelectorVisualizador('visualizer-filter-semanales', 'semanales');
+
+        const session = api.getSession();
+        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
+        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_semanales || '').toLowerCase().trim() : '';
         
         const fNom = document.getElementById('filter-ts-nombre') ? document.getElementById('filter-ts-nombre').value.toLowerCase().trim() : '';
+        const fSem = document.getElementById('filter-ts-semana') ? document.getElementById('filter-ts-semana').value : '';
         const fEst = document.getElementById('filter-ts-estado') ? document.getElementById('filter-ts-estado').value : '';
+
         const filtrado = tareas.filter(t => {
+            const tUsr = (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim();
+            if (selectedUsr !== '' && tUsr !== selectedUsr) return false;
+
             if (fNom && !(t.Nombre||'').toLowerCase().includes(fNom)) return false;
+            if (fSem && String(t.Semana) !== String(fSem)) return false;
             if (fEst && String(t.Estado) !== String(fEst)) return false;
             return true;
         });
@@ -264,8 +300,15 @@ Object.assign(window.ui, {
         const wrap = document.getElementById('prev-matrix-wrap');
         if (!wrap) return;
 
+        // Renderizar selector si es visualizador/supervisor/admin
+        this.renderizarSelectorVisualizador('visualizer-filter-preventivo', 'preventivo');
+
         const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const SEMANAS = [1, 2, 3, 4];
+
+        const session = api.getSession();
+        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
+        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_preventivo || '').toLowerCase().trim() : '';
 
         const fUsr = (document.getElementById('filter-prev-usuario') || {}).value?.toLowerCase().trim() || '';
         const fAre = (document.getElementById('filter-prev-area') || {}).value?.toLowerCase().trim() || '';
@@ -273,6 +316,12 @@ Object.assign(window.ui, {
         let usuariosFiltrados = (usuarios || []).filter(u => {
             const nombre = (u.Nombre || u.nombre || u.Usuario || '').toLowerCase();
             const area = (u.Area || u.area || '').toLowerCase();
+            const usuSist = (u.UsuarioSistema || u.usuariosistema || '').toLowerCase();
+            
+            // Filtro por selector (para supervisor/admin)
+            if (selectedUsr !== '' && !nombre.includes(selectedUsr) && !usuSist.includes(selectedUsr)) return false;
+            
+            // Filtro por búsqueda manual
             return (!fUsr || nombre.includes(fUsr)) && (!fAre || area.includes(fAre));
         });
 
@@ -281,14 +330,43 @@ Object.assign(window.ui, {
             return;
         }
 
-        // Construir índice de registros: key = "usuarioId_mes_semana"
+        // Construir índice de registros: key = "id_mes_semanal" (Soporta ID o Nombre y columnas movidas)
         const idx = {};
+        const mapMeses = { 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12 };
+        
         (registros || []).forEach(r => {
-            const uid = r.UsuarioId || r.usuarioid || r.usuario_id || '';
-            const mes = r.Mes || r.mes || '';
-            const sem = r.Semana || r.semana || '';
-            if (uid && mes && sem) {
-                idx[`${uid}_${mes}_${sem}`] = r;
+            const uid = r.UsuarioId || r.usuarioid || r.Usuario || r.usuario || '';
+            
+            let mN = 0, sN = 0;
+
+            // MODO CARROÑERO EXTREMO: Escanea todos los valores por si están movidos
+            for (let key in r) {
+                const val = r[key];
+                if (!val) continue;
+
+                // Intentar extraer número
+                let num = NaN;
+                if (typeof val === 'number') num = val;
+                else if (typeof val === 'string') {
+                    const match = val.match(/\d+/);
+                    if (match) num = parseInt(match[0]);
+                    else if (mapMeses[val.toLowerCase().trim()]) num = mapMeses[val.toLowerCase().trim()];
+                }
+
+                if (!isNaN(num)) {
+                    // Si la llave se parece a "Mes", es prioridad para el mes
+                    if (key.toLowerCase().includes('mes')) mN = num;
+                    // Si se parece a "Semana", es prioridad para semana
+                    else if (key.toLowerCase().includes('sem')) sN = num;
+                    // Fallback: Si no tenemos mes y el número es 1-12
+                    else if (!mN && num >= 1 && num <= 12) mN = num;
+                    // Fallback: Si no tenemos semana y el número es 1-4
+                    else if (!sN && num >= 1 && num <= 4) sN = num;
+                }
+            }
+
+            if (uid && mN >= 1 && mN <= 12 && sN >= 1 && sN <= 4) {
+                idx[`${uid}_${mN}_${sN}`] = r;
             }
         });
 
@@ -321,16 +399,21 @@ Object.assign(window.ui, {
 
             for (let m = 1; m <= 12; m++) {
                 for (let s = 1; s <= 4; s++) {
-                    const key = `${uid}_${m}_${s}`;
-                    const reg = idx[key];
+                    const nameKey = (u.Nombre || u.nombre || u.Usuario || u.usuario || '');
+                    const keyId = `${uid}_${m}_${s}`;
+                    const keyName = `${nameKey}_${m}_${s}`;
+                    const reg = idx[keyId] || idx[keyName];
                     const hecho = !!reg;
-                    const fecha = reg ? (reg.FechaRealizacion || reg.fecha || '') : '';
-                    const fechaShort = fecha ? fecha.slice(5) : ''; // MM-DD
-                    const title = hecho ? `Realizado: ${fecha}` : 'Clic para registrar';
+                    const fechaRaw = reg ? (reg.FechaRealizacion || reg.fecha || '') : '';
+                    const fecha = fechaRaw.includes('T') ? fechaRaw.split('T')[0] : fechaRaw;
+                    const fParts = fecha.split('-');
+                    const fechaShort = fParts.length === 3 ? `${fParts[2]}/${fParts[1]}` : fecha; // DD/MM
+                    const hora = reg ? (reg.HoraRealizacion || reg.hora || '') : '';
+                    const title = hecho ? `Realizado: ${fecha} ${hora}` : 'Clic para registrar';
                     const cursor = 'cursor:pointer;';
                     const cellBg = hecho ? '#d1fae5' : 'transparent';
                     const content = hecho
-                        ? `<span style="color:#059669;font-size:0.7rem;">✓<br>${fechaShort}</span>`
+                        ? `<span style="color:#059669;font-size:0.75rem;font-weight:700;">✓<br>${fechaShort}</span>`
                         : `<span style="color:#cbd5e1;font-size:1rem;">·</span>`;
 
                     html += `<td onclick="MainApp.abrirModalPrevReg('${uid}','${nombre.replace(/'/g,"\\'")}','${m}','${s}')" title="${title}" style="text-align:center;padding:4px 2px;border:1px solid #e4e9f5;${cursor}background:${cellBg};">${content}</td>`;
@@ -346,25 +429,91 @@ Object.assign(window.ui, {
     
     renderizarDashboardTareas(state) {
         if (!document.getElementById('view-tareas-dashboard')) return;
-        
-        // Count for Mensuales
-        const menTotal = state.tareasRecurrentes.length;
-        const menFin = state.tareasRecurrentes.filter(t => t.Estado === 'Finalizada').length;
-        const menPend = menTotal - menFin;
 
-        // Count for Semanales
-        const semTotal = state.tareasSemanales.length;
-        const semFin = state.tareasSemanales.filter(t => t.Estado === 'Finalizada').length;
-        const semPend = semTotal - semFin;
+        this.renderizarSelectorVisualizador('visualizer-filter-dashboard', 'dashboard');
 
-        // Count for Preventivo
-        const preTotal = state.planPreventivo.length;
-        const preFin = state.planPreventivo.filter(t => t.Estado === 'Realizado').length;
-        const prePend = preTotal - preFin;
+        const session = api.getSession();
+        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
+        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_dashboard || '').toLowerCase().trim() : '';
 
-        const renderPie = (canvasId, fin, pend, label) => {
+        const filterByUser = (arr) => {
+            if (selectedUsr === '') return arr;
+            return arr.filter(t => (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim() === selectedUsr);
+        };
+
+        const tRec = filterByUser(state.tareasRecurrentes);
+        const tSem = filterByUser(state.tareasSemanales);
+        const pPrev = filterByUser(state.planPreventivo);
+
+        // KPI Calculations
+        const menTotal = tRec.length;
+        const menFin = tRec.filter(t => t.Estado === 'Finalizada').length;
+        const semTotal = tSem.length;
+        const semFin = tSem.filter(t => t.Estado === 'Finalizada').length;
+        const preTotal = pPrev.length;
+        const preFin = pPrev.filter(t => t.Estado === 'Realizado').length;
+
+        const totalGlobal = menTotal + semTotal + preTotal;
+        const finGlobal = menFin + semFin + preFin;
+        const pendGlobal = totalGlobal - finGlobal;
+        const eficiencia = totalGlobal > 0 ? Math.round((finGlobal / totalGlobal) * 100) : 0;
+
+        // Render KPI Cards
+        const kpiContainer = document.getElementById('dashboard-kpi-container');
+        if (kpiContainer) {
+            kpiContainer.innerHTML = `
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="fa-solid fa-list-check"></i></div>
+                    <div>
+                        <div class="kpi-value">${totalGlobal}</div>
+                        <div class="kpi-label">Total Tareas</div>
+                    </div>
+                    <div class="kpi-trend neutral"><i class="fa-solid fa-circle-info"></i> Actividades hoy</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green"><i class="fa-solid fa-check-double"></i></div>
+                    <div>
+                        <div class="kpi-value">${finGlobal}</div>
+                        <div class="kpi-label">Completadas</div>
+                    </div>
+                    <div class="kpi-trend up"><i class="fa-solid fa-arrow-up"></i> ${finGlobal > 0 ? 'Progreso activo' : 'Sin iniciar'}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="fa-solid fa-clock"></i></div>
+                    <div>
+                        <div class="kpi-value">${pendGlobal}</div>
+                        <div class="kpi-label">Pendientes</div>
+                    </div>
+                    <div class="kpi-trend neutral"><i class="fa-solid fa-hourglass-half"></i> Requiere atención</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon purple"><i class="fa-solid fa-gauge-high"></i></div>
+                    <div>
+                        <div class="kpi-value">${eficiencia}%</div>
+                        <div class="kpi-label">Eficiencia Final</div>
+                    </div>
+                    <div class="kpi-trend up"><i class="fa-solid fa-rocket"></i> Cumplimiento</div>
+                </div>
+            `;
+        }
+
+        const updateEfficiencyUI = (prefix, fin, total) => {
+            const perc = total > 0 ? Math.round((fin / total) * 100) : 0;
+            const badge = document.getElementById(`eff-${prefix}`);
+            const bar = document.getElementById(`prog-${prefix}`);
+            if (badge) badge.textContent = `${perc}%`;
+            if (bar) bar.style.width = `${perc}%`;
+            return perc;
+        };
+
+        const eMen = updateEfficiencyUI('mensual', menFin, menTotal);
+        const eSem = updateEfficiencyUI('semanal', semFin, semTotal);
+        const ePre = updateEfficiencyUI('preventivo', preFin, preTotal);
+
+        const renderPie = (canvasId, fin, total, color) => {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
+            const pend = total - fin;
             const ctx = canvas.getContext('2d');
             if (this[canvasId+'Instance']) this[canvasId+'Instance'].destroy();
             
@@ -374,21 +523,24 @@ Object.assign(window.ui, {
                     labels: ['Completado', 'Pendiente'],
                     datasets: [{
                         data: [fin, pend],
-                        backgroundColor: ['#10b981', '#fbbf24']
+                        backgroundColor: [color, '#f1f5f9'],
+                        borderWidth: 0,
+                        hoverOffset: 4
                     }]
                 },
                 options: {
                     responsive: true,
+                    cutout: '75%',
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { display: false }
                     }
                 }
             });
         };
 
-        renderPie('chart-mensuales', menFin, menPend, 'Mensuales');
-        renderPie('chart-semanales', semFin, semPend, 'Semanales');
-        renderPie('chart-preventivo', preFin, prePend, 'Preventivos');
+        renderPie('chart-mensuales', menFin, menTotal, '#3b82f6');
+        renderPie('chart-semanales', semFin, semTotal, '#10b981');
+        renderPie('chart-preventivo', preFin, preTotal, '#f59e0b');
     },
     
     renderizarBitacoraV3(registros) {

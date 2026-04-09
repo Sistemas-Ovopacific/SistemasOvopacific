@@ -295,22 +295,44 @@
                  VISTA: DASHBOARD
             ══════════════════════════════════════════ -->
             <div class="view-section active" id="view-tareas-dashboard">
+                <div id="visualizer-filter-dashboard" class="visualizer-filter-bar" style="display:none;"></div>
+                
                 <div class="panel">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-chart-pie"></i> Cumplimiento de Tareas</h2>
                     </div>
-                    <div class="panel-body" style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
-                        <div style="width:100%; max-width:400px;">
-                            <h3 style="text-align:center; font-size:1.1rem; margin-bottom:10px;">Mensuales</h3>
-                            <canvas id="chart-mensuales"></canvas>
+                    <div class="panel-body">
+                        <!-- KPI Row -->
+                        <div id="dashboard-kpi-container" class="dashboard-grid">
+                            <!-- Renderizado dinámico de tarjetas KPI en tareasUI.js -->
                         </div>
-                        <div style="width:100%; max-width:400px;">
-                            <h3 style="text-align:center; font-size:1.1rem; margin-bottom:10px;">Semanales</h3>
-                            <canvas id="chart-semanales"></canvas>
-                        </div>
-                        <div style="width:100%; max-width:400px;">
-                            <h3 style="text-align:center; font-size:1.1rem; margin-bottom:10px;">Mantenimiento Preventivo</h3>
-                            <canvas id="chart-preventivo"></canvas>
+
+                        <!-- Charts Row -->
+                        <div class="dashboard-charts-grid">
+                            <div class="chart-panel-custom">
+                                <div class="chart-header-custom">
+                                    <h3>Mantenimiento Mensual</h3>
+                                    <div class="efficiency-badge" id="eff-mensual">0%</div>
+                                </div>
+                                <canvas id="chart-mensuales"></canvas>
+                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-mensual" style="width: 0%"></div></div>
+                            </div>
+                            <div class="chart-panel-custom">
+                                <div class="chart-header-custom">
+                                    <h3>Seguimiento Semanal</h3>
+                                    <div class="efficiency-badge" id="eff-semanal">0%</div>
+                                </div>
+                                <canvas id="chart-semanales"></canvas>
+                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-semanal" style="width: 0%"></div></div>
+                            </div>
+                            <div class="chart-panel-custom">
+                                <div class="chart-header-custom">
+                                    <h3>Plan Preventivo</h3>
+                                    <div class="efficiency-badge" id="eff-preventivo">0%</div>
+                                </div>
+                                <canvas id="chart-preventivo"></canvas>
+                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-preventivo" style="width: 0%"></div></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -494,7 +516,7 @@
                             <form id="form-prev-masivo" class="form-row" style="align-items:flex-end;">
                                 <div class="form-group field-half">
                                     <label for="prev-masivo-mes">Mes de Mantenimiento</label>
-                                    <select id="prev-masivo-mes" class="form-select" required>
+                                    <select id="prev-masivo-mes" class="form-select" style="min-width:140px;" required>
                                         <option value="1">Enero</option>
                                         <option value="2">Febrero</option>
                                         <option value="3">Marzo</option>
@@ -509,10 +531,16 @@
                                         <option value="12">Diciembre</option>
                                     </select>
                                 </div>
-                                <div class="form-group field-half">
-                                    <label for="prev-masivo-fecha">Fecha de Realizado (Opcional)</label>
-                                    <input type="date" id="prev-masivo-fecha">
+                                <div class="form-group" style="flex:1;">
+                                    <label for="prev-masivo-semana">Semana</label>
+                                    <select id="prev-masivo-semana" class="form-select" required>
+                                        <option value="1">Semana 1</option>
+                                        <option value="2">Semana 2</option>
+                                        <option value="3">Semana 3</option>
+                                        <option value="4">Semana 4</option>
+                                    </select>
                                 </div>
+                                <input type="hidden" id="prev-masivo-fecha">
                                 <div class="form-actions" style="margin-top:0;">
                                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Asignar a Todos</button>
                                 </div>
@@ -577,13 +605,11 @@
                             <input type="hidden" id="prev-reg-usuario-id">
                             <input type="hidden" id="prev-reg-mes">
                             <input type="hidden" id="prev-reg-semana">
+                            <input type="hidden" id="prev-reg-fecha">
+                            <input type="hidden" id="prev-reg-hora">
                             <div class="form-group full-width">
-                                <label for="prev-reg-fecha">Fecha del Mantenimiento</label>
-                                <input type="date" id="prev-reg-fecha" required>
-                            </div>
-                            <div class="form-group full-width">
-                                <label for="prev-reg-notas">Notas (Opcional)</label>
-                                <input type="text" id="prev-reg-notas" placeholder="Ej: PC limpiada, polvo removido...">
+                                <label for="prev-reg-notas">Notas del Mantenimiento (Opcional)</label>
+                                <input type="text" id="prev-reg-notas" placeholder="Ej: Limpieza realizada, ventiladores ok...">
                             </div>
                             <div class="form-actions" style="grid-column:1/-1;">
                                 <button type="button" class="btn btn-secondary" id="btn-prev-reg-cancel">Cancelar</button>
@@ -1025,19 +1051,19 @@
     </div>
 
     <!-- Scripts (en orden de carga) -->
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/ui.js"></script>
+    <script src="js/api.js?v=1.1"></script>
+    <script src="js/utils.js?v=1.1"></script>
+    <script src="js/ui.js?v=1.1"></script>
     <!-- UI Modules -->
-    <script src="js/ui/inventarioUI.js"></script>
-    <script src="js/ui/tareasUI.js"></script>
+    <script src="js/ui/inventarioUI.js?v=1.1"></script>
+    <script src="js/ui/tareasUI.js?v=1.1"></script>
     
-    <script src="js/boot.js"></script>
+    <script src="js/boot.js?v=1.1"></script>
     
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=1.1"></script>
     <!-- Controllers -->
-    <script src="js/controllers/inventarioController.js"></script>
-    <script src="js/controllers/tareasController.js"></script>
+    <script src="js/controllers/inventarioController.js?v=1.1"></script>
+    <script src="js/controllers/tareasController.js?v=1.1"></script>
 
     <!-- Partículas animadas para el portal -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>

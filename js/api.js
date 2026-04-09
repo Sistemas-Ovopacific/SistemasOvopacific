@@ -53,6 +53,9 @@ const api = {
         const user = this.getSession();
         if (user && user.usuario) {
             payload.UsuarioSistema = user.usuario;
+            payload.UsuarioSistemas = user.usuario;
+            payload.quien_registro = user.usuario;
+            payload.ejecutor = user.usuario;
         }
 
         const parseTextSafe = (text) => {
