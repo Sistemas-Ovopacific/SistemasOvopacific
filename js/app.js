@@ -456,11 +456,34 @@ const MainApp = {
         document.getElementById('prev-reg-semana').value = semana;
         document.getElementById('prev-reg-usuario').textContent = nombreUsuario;
         document.getElementById('prev-reg-periodo').textContent = `${MESES[Number(mes)-1]} – Semana ${semana}`;
+
+        // BUSCAR SI YA EXISTE UN REGISTRO PARA ESTA CELDA
+        const existing = (this.state.planPreventivo || []).find(r => {
+            const rUid = String(r.UsuarioId || r.usuarioid || r.Usuario || r.usuario || '').trim();
+            const rMes = parseInt(r.Mes || r.mes || 0);
+            const rSem = parseInt(r.Semana || r.semana || 0);
+            return rUid === String(usuarioId).trim() && rMes === parseInt(mes) && rSem === parseInt(semana);
+        });
+
         const now = new Date();
-        document.getElementById('prev-reg-fecha').value = now.toISOString().split('T')[0];
-        document.getElementById('prev-reg-hora').value = now.toTimeString().slice(0, 5);
-        document.getElementById('prev-reg-notas').value = '';
+        if (existing) {
+            // Cargar datos existentes
+            document.getElementById('prev-reg-id').value = existing.id || existing.ID || '';
+            document.getElementById('prev-reg-fecha').value = (existing.FechaRealizacion || existing.fecha || now.toISOString().split('T')[0]).split('T')[0];
+            document.getElementById('prev-reg-hora').value = existing.hora || now.toTimeString().slice(0, 5);
+            document.getElementById('prev-reg-notas').value = existing.Notas || existing.notas || '';
+        } else {
+            // Valores por defecto para nuevo registro
+            document.getElementById('prev-reg-id').value = '';
+            document.getElementById('prev-reg-fecha').value = now.toISOString().split('T')[0];
+            document.getElementById('prev-reg-hora').value = now.toTimeString().slice(0, 5);
+            document.getElementById('prev-reg-notas').value = '';
+        }
+
         const modal = document.getElementById('modal-prev-registro');
+        const btnDelete = document.getElementById('btn-prev-reg-delete');
+        if (btnDelete) btnDelete.style.display = existing ? 'block' : 'none';
+
         modal.style.display = 'flex';
         modal.style.alignItems = 'center';
         modal.style.justifyContent = 'center';
@@ -480,17 +503,18 @@ const MainApp = {
         const session = api.getSession();
         utils.mostrarLoader('Guardando mantenimiento...');
         try {
-            // ENVIO AL BACKEND con la acción corregida 'addRegistroPreventivo'
+            // ENVIO AL BACKEND
+            const existingId = document.getElementById('prev-reg-id').value;
             const res = await api.post({ 
                 action: 'addRegistroPreventivo', 
                 registro: {
-                    id: 'PREV-' + Date.now(),
-                    Usuario: nombre, // Columna B (Mapeo por Nombre para coincidir con registros previos)
-                    UsuarioId: usuarioId, // Como respaldo
+                    id: existingId || ('PREV-' + Date.now()), // Si existe ID, se mantiene para actualización
+                    Usuario: nombre, 
+                    UsuarioId: usuarioId, 
                     Mes: mes,
                     Semana: semana,
-                    Estados: 'Realizado', // Columna G (Plural según Excel)
-                    Fecha: fecha,        // Columna I
+                    Estado: 'Realizado', 
+                    FechaRealizacion: fecha, 
                     Notas: notas || 'Mantenimiento Individual',
                     UsuarioSistema: session.usuario || 'Admin'
                 }
@@ -500,9 +524,46 @@ const MainApp = {
             await this.cargarTodosLosDatos();
             document.getElementById('modal-prev-registro').style.display = 'none';
             this.renderizarPreventivoMatriz();
-            utils.mostrarToast('Mantenimiento registrado ✓', 'success');
+            utils.mostrarToast('Mantenimiento guardado ✓', 'success');
         } catch (err) {
             utils.mostrarToast('Error al guardar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarRegistroPreventivo() {
+        const id = document.getElementById('prev-reg-id').value;
+        if (!id) return;
+
+        if (!confirm('¿Estás seguro de eliminar este registro de mantenimiento?')) return;
+
+        utils.mostrarLoader('Eliminando registro...');
+        try {
+            await api.post({ action: 'deletePreventivo', id: id });
+            document.getElementById('modal-prev-registro').style.display = 'none';
+            await this.cargarTodosLosDatos();
+            this.renderizarPreventivoMatriz();
+            utils.mostrarToast('Registro eliminado con éxito', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error al eliminar: ' + err.message, 'danger');
+        } finally {
+            utils.ocultarLoader();
+        }
+    },
+
+    async eliminarUsuarioPreventivo(id, nombre) {
+        if (!id) return;
+        if (!confirm(`¿Estás seguro de eliminar a "${nombre}" del directorio preventivo?`)) return;
+
+        utils.mostrarLoader('Eliminando usuario...');
+        try {
+            await api.post({ action: 'deleteUsuarioPreventivo', id: id });
+            await this.cargarTodosLosDatos();
+            this.renderizarPreventivoMatriz();
+            utils.mostrarToast('Usuario eliminado', 'success');
+        } catch (err) {
+            utils.mostrarToast('Error: ' + err.message, 'danger');
         } finally {
             utils.ocultarLoader();
         }

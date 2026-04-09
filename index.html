@@ -193,14 +193,7 @@
                         </li>
                     </ul>
 
-                    <!-- Sección Administración -->
-                    <div class="nav-section-title" style="margin-top:18px;">Administración</div>
-                    <ul>
-                        <li data-tareas-view="usuarios" onclick="MainApp.switchTareasView('usuarios')">
-                            <i class="fa-solid fa-people-group"></i>
-                            <span>Responsables / Equipos</span>
-                        </li>
-                    </ul>
+                    <!-- Sección Administración (Eliminada por redundancia según solicitud del usuario) -->
 
                 </div>
             </div>
@@ -581,8 +574,8 @@
                             <input type="text" id="filter-prev-area" class="form-control-sm" placeholder="Buscar Área" style="width:140px;" oninput="MainApp.renderizarPreventivoMatriz()">
                         </div>
                     </div>
-                    <div class="panel-body" style="padding:0; overflow-x:auto;">
-                        <div id="prev-matrix-wrap" style="min-width:900px;">
+                    <div class="panel-body" style="padding:0; overflow:hidden;">
+                        <div id="prev-matrix-wrap" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
                             <!-- La tabla matricial se renderiza aquí dinámicamente -->
                         </div>
                     </div>
@@ -607,13 +600,19 @@
                             <input type="hidden" id="prev-reg-semana">
                             <input type="hidden" id="prev-reg-fecha">
                             <input type="hidden" id="prev-reg-hora">
+                            <input type="hidden" id="prev-reg-id">
                             <div class="form-group full-width">
                                 <label for="prev-reg-notas">Notas del Mantenimiento (Opcional)</label>
                                 <input type="text" id="prev-reg-notas" placeholder="Ej: Limpieza realizada, ventiladores ok...">
                             </div>
-                            <div class="form-actions" style="grid-column:1/-1;">
-                                <button type="button" class="btn btn-secondary" id="btn-prev-reg-cancel">Cancelar</button>
-                                <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Guardar Registro</button>
+                            <div class="form-actions" style="grid-column:1/-1; display:flex; justify-content:space-between; gap:10px;">
+                                <div>
+                                    <button type="button" class="btn btn-danger" id="btn-prev-reg-delete" style="display:none;" onclick="MainApp.eliminarRegistroPreventivo()"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <button type="button" class="btn btn-secondary" id="btn-prev-reg-cancel">Cancelar</button>
+                                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Guardar</button>
+                                </div>
                             </div>
                         </form>
                     </div>

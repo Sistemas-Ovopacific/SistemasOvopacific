@@ -18,38 +18,29 @@ Object.assign(window.ui, {
         
         // Obtener lista única de usuarios de todos los datos de tareas
         const appState = window.MainApp.state;
-        const allTasks = [
-            ...appState.tareasRecurrentes,
-            ...appState.tareasSemanales,
-            ...appState.planPreventivo,
-            ...appState.bitacora,
-            ...appState.usuariosPreventivo
-        ];
+        const allTasks = [...appState.tareasRecurrentes, ...appState.tareasSemanales, ...appState.planPreventivo, ...appState.bitacora, ...appState.usuariosPreventivo];
         
-        let usersRaw = allTasks.map(t => {
-            return (t.UsuarioSistema || t.usuariosistema || t.Usuario || t.usuario || '').trim();
-        }).filter(u => u !== '' && u.toLowerCase() !== 'admin');
-
-        // Eliminar duplicados
+        let usersRaw = allTasks.map(t => (t.UsuarioSistema || t.usuariosistema || t.Usuario || t.usuario || '').trim()).filter(u => u !== '' && u.toLowerCase() !== 'admin');
         let uniqueUsers = [...new Set(usersRaw)];
 
-        // Inteligencia básica: Si existe "yolfranlle" y "yol", eliminar "yol"
-        const users = uniqueUsers.filter(u => {
-            const lower = u.toLowerCase();
-            if (lower === 'yol') {
-                return !uniqueUsers.some(other => other.toLowerCase().startsWith('yol') && other.length > 3);
-            }
-            return true;
-        }).sort();
+        // AISLAMIENTO: Si no es Admin, el usuario solo puede verse a sí mismo en el selector
+        const curUserRaw = (session.usuario || '').trim();
+        const isAdminStrict = session.rol === 'admin';
         
-        // Si no hay usuarios en los registros, al menos mostrar el selector vacío o con "Todos"
+        let users = uniqueUsers;
+        if (!isAdminStrict) {
+            users = uniqueUsers.filter(u => u.toLowerCase() === curUserRaw.toLowerCase());
+        }
+
+        users = users.sort();
+        
         const currentSelected = appState[`selectedUser_${modulo}`] || '';
 
         container.innerHTML = `
             <label><i class="fa-solid fa-filter"></i> Ver tareas de:</label>
             <select onchange="window.MainApp.handleVisualizerUserChange('${modulo}', this.value)">
-                <option value="">— Todos los usuarios —</option>
-                ${users.map(u => `<option value="${u}" ${u === currentSelected ? 'selected' : ''}>${u}</option>`).join('')}
+                ${isAdminStrict ? '<option value="">— Ver Todos —</option>' : ''}
+                ${users.map(u => `<option value="${u}" ${u.toLowerCase() === currentSelected.toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
             </select>
         `;
     },
@@ -66,8 +57,12 @@ Object.assign(window.ui, {
         this.renderizarSelectorVisualizador('visualizer-filter-recurrentes', 'recurrentes');
 
         const session = api.getSession();
-        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
-        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_recurrentes || '').toLowerCase().trim() : '';
+        const isAdminStrict = session.rol === 'admin';
+        
+        let selectedUsr = (window.MainApp.state.selectedUser_recurrentes || '').toLowerCase().trim();
+        if (!isAdminStrict && selectedUsr === '') {
+            selectedUsr = (session.usuario || '').toLowerCase().trim();
+        }
         
         const fNom = document.getElementById('filter-tm-nombre') ? document.getElementById('filter-tm-nombre').value.toLowerCase().trim() : '';
         const fMes = document.getElementById('filter-tm-mes') ? document.getElementById('filter-tm-mes').value : '';
@@ -202,8 +197,12 @@ Object.assign(window.ui, {
         this.renderizarSelectorVisualizador('visualizer-filter-semanales', 'semanales');
 
         const session = api.getSession();
-        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
-        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_semanales || '').toLowerCase().trim() : '';
+        const isAdminStrict = session.rol === 'admin';
+        
+        let selectedUsr = (window.MainApp.state.selectedUser_semanales || '').toLowerCase().trim();
+        if (!isAdminStrict && selectedUsr === '') {
+            selectedUsr = (session.usuario || '').toLowerCase().trim();
+        }
         
         const fNom = document.getElementById('filter-ts-nombre') ? document.getElementById('filter-ts-nombre').value.toLowerCase().trim() : '';
         const fSem = document.getElementById('filter-ts-semana') ? document.getElementById('filter-ts-semana').value : '';
@@ -307,8 +306,14 @@ Object.assign(window.ui, {
         const SEMANAS = [1, 2, 3, 4];
 
         const session = api.getSession();
-        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
-        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_preventivo || '').toLowerCase().trim() : '';
+        const isAdminStrict = session.rol === 'admin';
+        const curUser = (session.usuario || '').toLowerCase().trim();
+        
+        // Si no es admin estricto, forzamos que se vea solo lo propio por defecto
+        let selectedUsr = (window.MainApp.state.selectedUser_preventivo || '').toLowerCase().trim();
+        if (!isAdminStrict && selectedUsr === '') {
+            selectedUsr = curUser;
+        }
 
         const fUsr = (document.getElementById('filter-prev-usuario') || {}).value?.toLowerCase().trim() || '';
         const fAre = (document.getElementById('filter-prev-area') || {}).value?.toLowerCase().trim() || '';
@@ -330,68 +335,59 @@ Object.assign(window.ui, {
             return;
         }
 
-        // Construir índice de registros: key = "id_mes_semanal" (Soporta ID o Nombre y columnas movidas)
+        // Construir índice de registros: key = "uid_mes_semana"
         const idx = {};
-        const mapMeses = { 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12 };
         
         (registros || []).forEach(r => {
-            const uid = r.UsuarioId || r.usuarioid || r.Usuario || r.usuario || '';
+            // Normalización extrema de los campos clave
+            const uid = String(r.UsuarioId || r.usuarioid || r.Usuario || r.usuario || '').trim();
             
-            let mN = 0, sN = 0;
+            // Extraer Mes y Semana buscando en múltiples variantes de nombres de columna
+            let mN = r.Mes || r.mes || r.MES || 0;
+            let sN = r.Semana || r.semana || r.SEMANA || 0;
 
-            // MODO CARROÑERO EXTREMO + INTELIGENTE
-            for (let key in r) {
-                const val = r[key];
-                if (!val) continue;
-
-                const valStr = String(val).trim();
-
-                // 1. SI ES UNA FECHA (202X-XX-XX), extrae y salta (para no confundir a Mes/Semana)
-                if (valStr.match(/^\d{4}-\d{2}-\d{2}$/) || valStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                    r._fechaRescate = valStr;
-                    continue; 
-                }
-
-                // 2. Intentar extraer número para Mes/Semana
-                let num = NaN;
-                if (typeof val === 'number') num = val;
-                else if (typeof val === 'string') {
-                    const match = valStr.match(/\d+/);
-                    if (match) num = parseInt(match[0]);
-                    else if (mapMeses[valStr.toLowerCase()]) num = mapMeses[valStr.toLowerCase()];
-                }
-
-                if (!isNaN(num)) {
-                    // Si la llave se parece a "Mes", es prioridad absoluta para el mes
-                    if (key.toLowerCase().includes('mes')) mN = num;
-                    // Si se parece a "Semana", es prioridad absoluta para semana
-                    else if (key.toLowerCase().includes('sem')) sN = num;
-                    // Fallbacks (Solo si no tenemos los datos y el número "cabe" en el rango)
-                    else if (!mN && num >= 1 && num <= 12) mN = num;
-                    else if (!sN && num >= 1 && num <= 4) sN = num;
+            // Si no se encontraron por nombre directo, intentar el "Modo Carroñero" simplificado
+            if (!mN || !sN) {
+                for (let key in r) {
+                    const kLow = key.toLowerCase();
+                    if (!mN && kLow.includes('mes')) mN = r[key];
+                    if (!sN && kLow.includes('sem')) sN = r[key];
                 }
             }
 
-            if (uid && mN >= 1 && mN <= 12 && sN >= 1 && sN <= 4) {
-                // Guardamos el mes/semana real detectado en el objeto para que el UI sepa qué pintar
-                r._mesDetectado = mN;
-                r._semDetectada = sN;
-                idx[`${uid}_${mN}_${sN}`] = r;
+            // Asegurar que sean números limpios
+            const mesFinal = parseInt(mN) || 0;
+            const semFinal = parseInt(sN) || 0;
+
+            if (uid && mesFinal >= 1 && mesFinal <= 12 && semFinal >= 1 && semFinal <= 4) {
+                // Guardamos metadatos para depuración visual si fuera necesario
+                r._mesDetectado = mesFinal;
+                r._semDetectada = semFinal;
+                // La clave del índice debe ser idéntica a la que usará el generador de la tabla
+                idx[`${uid}_${mesFinal}_${semFinal}`] = r;
             }
         });
 
-        let html = '<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+        let html = '<table style="border-collapse:separate; border-spacing:0; font-size:0.78rem; table-layout:fixed; width:2430px; border:1px solid #e4e9f5;">';
+        
+        // Estabilización de columnas con colgroup
+        html += '<colgroup>';
+        html += '<col style="width:160px;">';
+        html += '<col style="width:110px;">';
+        for(let i=0; i<48; i++) html += '<col style="width:45px;">';
+        html += '</colgroup>';
 
         // Header row 1: Meses
-        html += '<thead><tr><th rowspan="2" style="position:sticky;left:0;background:#e8ecf5;z-index:2;padding:10px 14px;text-align:left;min-width:160px;">Usuario</th>';
-        html += '<th rowspan="2" style="position:sticky;left:160px;background:#e8ecf5;z-index:2;padding:10px 8px;text-align:left;min-width:110px;">Área</th>';
+        html += '<thead><tr>';
+        html += '<th rowspan="2" style="position:sticky; left:0; top:0; background:#e8ecf5; z-index:20; padding:10px 14px; text-align:left; color:#475569; border-right:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">Usuario</th>';
+        html += '<th rowspan="2" style="position:sticky; left:160px; top:0; background:#e8ecf5; z-index:20; padding:10px 8px; text-align:left; color:#475569; border-right:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">Área</th>';
         MESES.forEach(m => {
-            html += `<th colspan="4" style="text-align:center;background:#6366f1;color:#fff;padding:6px;border:1px solid rgba(255,255,255,0.2);">${m}</th>`;
+            html += `<th colspan="4" style="text-align:center; background:#6366f1; color:#fff; padding:6px; font-weight:700; border-right:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1);">${m}</th>`;
         });
         html += '</tr><tr>';
         MESES.forEach(() => {
             SEMANAS.forEach(s => {
-                html += `<th style="text-align:center;background:#e8ecf5;padding:5px 3px;color:#64748b;font-size:0.68rem;letter-spacing:0.5px;">S${s}</th>`;
+                html += `<th style="text-align:center; background:#f1f5f9; padding:5px 3px; color:#64748b; font-size:0.68rem; border-right:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">S${s}</th>`;
             });
         });
         html += '</tr></thead><tbody>';
@@ -404,8 +400,13 @@ Object.assign(window.ui, {
             const bg = i % 2 === 0 ? '#ffffff' : '#f8faff';
 
             html += `<tr style="background:${bg};">`;
-            html += `<td style="position:sticky;left:0;background:${bg};z-index:1;padding:8px 14px;font-weight:600;color:#1e293b;border-bottom:1px solid #e4e9f5;">${nombre}</td>`;
-            html += `<td style="position:sticky;left:160px;background:${bg};z-index:1;padding:8px 8px;color:#64748b;border-bottom:1px solid #e4e9f5;">${area}</td>`;
+            html += `<td style="position:sticky; left:0; background:${bg}; z-index:1; padding:8px 14px; font-weight:600; color:#1e293b; border-bottom:1px solid #e4e9f5;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nombre}</span>
+                            <i class="fa-solid fa-trash-can" style="color:#fca5a5; cursor:pointer; font-size:0.75rem; opacity:0.6; padding-left:5px;" title="Eliminar usuario" onclick="event.stopPropagation(); MainApp.eliminarUsuarioPreventivo('${uid}', '${nombre.replace(/'/g,"\\'")}');"></i>
+                        </div>
+                    </td>`;
+            html += `<td style="position:sticky; left:160px; background:${bg}; z-index:1; padding:8px 8px; color:#64748b; border-bottom:1px solid #e4e9f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${area}</td>`;
 
             for (let m = 1; m <= 12; m++) {
                 for (let s = 1; s <= 4; s++) {
@@ -445,8 +446,14 @@ Object.assign(window.ui, {
         this.renderizarSelectorVisualizador('visualizer-filter-dashboard', 'dashboard');
 
         const session = api.getSession();
-        const isAdmin = ['admin', 'supervisor', 'visualizador'].includes(session.rol);
-        const selectedUsr = isAdmin ? (window.MainApp.state.selectedUser_dashboard || '').toLowerCase().trim() : '';
+        const isAdminStrict = session.rol === 'admin';
+        const curUser = (session.usuario || '').toLowerCase().trim();
+        
+        // Si no es admin estricto, forzamos aislamiento en Dashboard
+        let selectedUsr = (window.MainApp.state.selectedUser_dashboard || '').toLowerCase().trim();
+        if (!isAdminStrict && selectedUsr === '') {
+            selectedUsr = curUser;
+        }
 
         const filterByUser = (arr) => {
             if (selectedUsr === '') return arr;
@@ -563,11 +570,14 @@ Object.assign(window.ui, {
         this.renderizarSelectorVisualizador('visualizer-filter-bitacora', 'bitacora');
 
         const session = api.getSession();
-        const usr = (session.usuario || '').toLowerCase().trim();
-        const isSupervisor = session.rol === 'supervisor';
-        const isAdmin = session.rol === 'admin' || isSupervisor;
-        const isVisualizer = ['visualizador', 'admin', 'supervisor'].includes(session.rol);
-        const selectedUsr = isVisualizer ? (window.MainApp.state.selectedUser_bitacora || '').toLowerCase().trim() : '';
+        const isAdminStrict = session.rol === 'admin';
+        const curUser = (session.usuario || '').toLowerCase().trim();
+        
+        // Si no es admin estricto, forzamos aislamiento en Bitácora
+        let selectedUsr = (window.MainApp.state.selectedUser_bitacora || '').toLowerCase().trim();
+        if (!isAdminStrict && selectedUsr === '') {
+            selectedUsr = curUser;
+        }
 
         const filtrado = registros.filter(b => {
             // Tolerancia a singular/plural UsuarioSistema/UsuarioSistemas
