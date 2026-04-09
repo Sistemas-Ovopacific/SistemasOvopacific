@@ -570,23 +570,34 @@ Object.assign(window.ui, {
         this.renderizarSelectorVisualizador('visualizer-filter-bitacora', 'bitacora');
 
         const session = api.getSession();
-        const isAdminStrict = session.rol === 'admin';
+        const isAdmin = session.rol === 'admin';
+        const isSupervisor = session.rol === 'supervisor';
+        const isVisualizer = session.rol === 'visualizador';
         const curUser = (session.usuario || '').toLowerCase().trim();
         
-        // Si no es admin estricto, forzamos aislamiento en Bitácora
         let selectedUsr = (window.MainApp.state.selectedUser_bitacora || '').toLowerCase().trim();
-        if (!isAdminStrict && selectedUsr === '') {
+        // Si no es admin/supervisor, forzamos ver solo lo propio
+        if (!isAdmin && !isSupervisor && selectedUsr === '') {
             selectedUsr = curUser;
         }
 
         const filtrado = registros.filter(b => {
-            // Tolerancia a singular/plural UsuarioSistema/UsuarioSistemas
-            const bUsr = String(b.UsuarioSistema || b.UsuarioSistemas || b.usuariosistema || b.usuariosistemas || '').toLowerCase().trim();
-            if (!isAdmin && !isVisualizer && bUsr !== usr && bUsr !== '') return false;
-            // Si el registro no tiene usuario y no somos admin, igual lo mostramos para no perder datos históricos? 
-            // O mejor permitir que se vea si está vacío (bUsr === '')
-            if (isVisualizer && selectedUsr !== '' && bUsr !== selectedUsr) return false;
-            return true;
+            const bUsr = String(b.UsuarioSistema || b.UsuarioSistemas || b.usuariosistema || b.usuariosistemas || b.Usuario || b.usuario || '').toLowerCase().trim();
+            
+            // Administradores y Supervisores ven todo
+            if (isAdmin || isSupervisor) {
+                if (selectedUsr !== '' && bUsr !== selectedUsr) return false;
+                return true;
+            }
+            
+            // Otros (Usuarios o Visualizadores) ven lo propio o lo seleccionado si tienen permiso
+            if (isVisualizer) {
+                if (selectedUsr !== '' && bUsr !== selectedUsr) return false;
+                return true;
+            }
+
+            // Usuarios normales: SOLO lo propio
+            return bUsr === curUser || bUsr === '';
         });
 
         if (filtrado.length === 0) {
