@@ -339,33 +339,43 @@ Object.assign(window.ui, {
             
             let mN = 0, sN = 0;
 
-            // MODO CARROÑERO EXTREMO: Escanea todos los valores por si están movidos
+            // MODO CARROÑERO EXTREMO + INTELIGENTE
             for (let key in r) {
                 const val = r[key];
                 if (!val) continue;
 
-                // Intentar extraer número
+                const valStr = String(val).trim();
+
+                // 1. SI ES UNA FECHA (202X-XX-XX), extrae y salta (para no confundir a Mes/Semana)
+                if (valStr.match(/^\d{4}-\d{2}-\d{2}$/) || valStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    r._fechaRescate = valStr;
+                    continue; 
+                }
+
+                // 2. Intentar extraer número para Mes/Semana
                 let num = NaN;
                 if (typeof val === 'number') num = val;
                 else if (typeof val === 'string') {
-                    const match = val.match(/\d+/);
+                    const match = valStr.match(/\d+/);
                     if (match) num = parseInt(match[0]);
-                    else if (mapMeses[val.toLowerCase().trim()]) num = mapMeses[val.toLowerCase().trim()];
+                    else if (mapMeses[valStr.toLowerCase()]) num = mapMeses[valStr.toLowerCase()];
                 }
 
                 if (!isNaN(num)) {
-                    // Si la llave se parece a "Mes", es prioridad para el mes
+                    // Si la llave se parece a "Mes", es prioridad absoluta para el mes
                     if (key.toLowerCase().includes('mes')) mN = num;
-                    // Si se parece a "Semana", es prioridad para semana
+                    // Si se parece a "Semana", es prioridad absoluta para semana
                     else if (key.toLowerCase().includes('sem')) sN = num;
-                    // Fallback: Si no tenemos mes y el número es 1-12
+                    // Fallbacks (Solo si no tenemos los datos y el número "cabe" en el rango)
                     else if (!mN && num >= 1 && num <= 12) mN = num;
-                    // Fallback: Si no tenemos semana y el número es 1-4
                     else if (!sN && num >= 1 && num <= 4) sN = num;
                 }
             }
 
             if (uid && mN >= 1 && mN <= 12 && sN >= 1 && sN <= 4) {
+                // Guardamos el mes/semana real detectado en el objeto para que el UI sepa qué pintar
+                r._mesDetectado = mN;
+                r._semDetectada = sN;
                 idx[`${uid}_${mN}_${sN}`] = r;
             }
         });
@@ -404,10 +414,12 @@ Object.assign(window.ui, {
                     const keyName = `${nameKey}_${m}_${s}`;
                     const reg = idx[keyId] || idx[keyName];
                     const hecho = !!reg;
-                    const fechaRaw = reg ? (reg.FechaRealizacion || reg.fecha || '') : '';
-                    const fecha = fechaRaw.includes('T') ? fechaRaw.split('T')[0] : fechaRaw;
-                    const fParts = fecha.split('-');
-                    const fechaShort = fParts.length === 3 ? `${fParts[2]}/${fParts[1]}` : fecha; // DD/MM
+                    // Rescate de fecha (Prioridad al campo real, luego al rescatado del desorden)
+                    const fechaRaw = reg ? (reg.FechaRealizacion || reg.fecha || reg._fechaRescate || '') : '';
+                    const fecha = (fechaRaw && fechaRaw.includes('T')) ? fechaRaw.split('T')[0] : fechaRaw;
+                    const fParts = fecha ? fecha.split('-') : [];
+                    const fechaShort = fParts.length === 3 ? `${fParts[2]}/${fParts[1]}` : (fecha || ''); 
+                    
                     const hora = reg ? (reg.HoraRealizacion || reg.hora || '') : '';
                     const title = hecho ? `Realizado: ${fecha} ${hora}` : 'Clic para registrar';
                     const cursor = 'cursor:pointer;';

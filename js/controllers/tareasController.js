@@ -364,9 +364,9 @@ Object.assign(window.MainApp, {
             const res = await api.post({ 
                 action: 'addPreventivoMasivo', 
                 Mes: mes, // Col F
-                Estado: 'Realizado', // Col G
+                Semana: semana, // Col G
+                Estado: 'Realizado', // Col H
                 Estados: 'Realizado',
-                Semana: semana, // Col H
                 Fecha: fecha, // Col I
                 FechaRealizacion: fecha,
                 UsuarioSistema: session.usuario || 'Admin', // Col K
