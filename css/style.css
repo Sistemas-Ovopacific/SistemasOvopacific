@@ -213,11 +213,26 @@ body::before, body::after { display: none; }
 .sidebar-nav li.active::before {
     content: '';
     position: absolute;
-    left: 0; top: 20%; bottom: 20%;
-    width: 3px;
-    background: var(--accent);
-    border-radius: 0 3px 3px 0;
+    left: 0; top: 15%; bottom: 15%;
+    width: 6px; /* Más grueso y visible */
+    border-radius: 0 4px 4px 0;
 }
+
+/* Colores dinámicos por sección */
+.sidebar-nav li[data-view="dashboard"].active::before,
+.sidebar-nav li[data-tareas-view="dashboard"].active::before { background: #8b5cf6; } /* Púrpura */
+
+.sidebar-nav li[data-view="recurrentes"].active::before,
+.sidebar-nav li[data-tareas-view="recurrentes"].active::before { background: #3b82f6; } /* Azul */
+
+.sidebar-nav li[data-view="semanales"].active::before,
+.sidebar-nav li[data-tareas-view="semanales"].active::before { background: #10b981; } /* Verde */
+
+.sidebar-nav li[data-view="preventivo"].active::before,
+.sidebar-nav li[data-tareas-view="preventivo"].active::before { background: #f59e0b; } /* Naranja */
+
+.sidebar-nav li[data-view="bitacora"].active::before,
+.sidebar-nav li[data-tareas-view="bitacora"].active::before { background: #ef4444; } /* Rojo */
 
 .sidebar-nav li i { width: 18px; text-align: center; font-size: 0.9rem; }
 
@@ -353,6 +368,8 @@ body::before, body::after { display: none; }
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    max-width: calc(100vw - var(--sidebar-w)); /* Evita desborde global */
+    overflow-x: hidden;
 }
 
 /* Topbar */

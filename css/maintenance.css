@@ -221,10 +221,40 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* ── Utilidades ─────────────────────────────────────────── */
-.panel-no-padding .panel-body { padding: 0 !important; }
+/* Panel sin padding para tablas */
+.panel-no-padding .panel-body { padding: 0 !important; overflow: hidden; }
 .panel-no-padding .table-wrap, 
 .panel-no-padding .preventivo-scroll-wrap { border: none; border-radius: 0; }
+
+/* Scrollbar Personalizado para Matrices (Muy visible) */
+#prev-matrix-wrap::-webkit-scrollbar {
+    height: 12px;
+}
+#prev-matrix-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+#prev-matrix-wrap::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 10px;
+    border: 3px solid #f1f5f9;
+}
+#prev-matrix-wrap::-webkit-scrollbar-thumb:hover {
+    background: #4f46e5;
+}
+
+/* Estabilización de contenedores para evitar cortes */
+.view-section {
+    max-width: 100%;
+}
+.panel {
+    max-width: 100%;
+    margin-bottom: 24px;
+}
+.panel-body {
+    max-width: 100%;
+    overflow-x: auto;
+}
 
 /* ── Bitácora Premium Grid ──────────────────────────────── */
 .bitacora-grid {
