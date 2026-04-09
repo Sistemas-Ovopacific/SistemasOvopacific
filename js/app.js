@@ -276,7 +276,8 @@ const MainApp = {
 
         // Actualizar estados del sidebar (Tareas)
         document.querySelectorAll('#nav-links-tareas li').forEach(li => {
-            li.classList.toggle('active', li.dataset.tareasView === vista);
+            const v = li.dataset.tareasView;
+            li.classList.toggle('active', v === vista || `tareas-${v}` === vista);
         });
 
         // Mostrar la sección correspondiente
