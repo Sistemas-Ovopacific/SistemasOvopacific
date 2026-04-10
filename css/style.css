@@ -205,16 +205,21 @@ body::before, body::after { display: none; }
 }
 
 .sidebar-nav li.active {
-    background: rgba(91, 94, 244, 0.08);
+    background: rgba(91, 94, 244, 0.12) !important;
+    color: var(--accent) !important;
+    font-weight: 700;
+}
+
+.sidebar-nav li.active i {
     color: var(--accent);
-    font-weight: 600;
 }
 
 .sidebar-nav li.active::before {
     content: '';
     position: absolute;
     left: 0; top: 15%; bottom: 15%;
-    width: 6px; /* Más grueso y visible */
+    width: 5px;
+    background: var(--accent);
     border-radius: 0 4px 4px 0;
 }
 
@@ -645,6 +650,21 @@ tbody td {
     padding: 13px 16px;
     color: var(--text-secondary);
     vertical-align: middle;
+    transition: all 0.2s ease;
+}
+
+/* ── Fila Seleccionada (Premium Highlight) ── */
+tbody tr.selected-row {
+    background: rgba(91, 94, 244, 0.08) !important;
+}
+
+tbody tr.selected-row td {
+    color: var(--accent) !important;
+    font-weight: 600;
+}
+
+tbody tr.selected-row td:first-child {
+    box-shadow: inset 4px 0 0 var(--accent);
 }
 
 .row-num { color: var(--text-muted); font-size: 0.78rem; }

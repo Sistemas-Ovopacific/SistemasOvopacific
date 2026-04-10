@@ -20,29 +20,74 @@ Object.assign(window.ui, {
         const appState = window.MainApp.state;
         const allTasks = [...appState.tareasRecurrentes, ...appState.tareasSemanales, ...appState.planPreventivo, ...appState.bitacora, ...appState.usuariosPreventivo];
         
-        let usersRaw = allTasks.map(t => (t.UsuarioSistema || t.usuariosistema || t.Usuario || t.usuario || '').trim()).filter(u => u !== '' && u.toLowerCase() !== 'admin');
-        let uniqueUsers = [...new Set(usersRaw)];
+        let usersRaw = [];
+        allTasks.forEach(t => {
+            const uSys = (t.UsuarioSistema || t.usuariosistema || t.UsuarioSistemas || t.usuariosistemas || '').toString().trim();
+            const uNom = (t.Nombre || t.nombre || t.Usuario || t.usuario || '').toString().trim();
+            if (uSys) usersRaw.push(uSys);
+            if (uNom) usersRaw.push(uNom);
+        });
+        
+        // Mantener solo valores únicos y válidos
+        let uniqueUsers = [...new Set(usersRaw)].filter(u => u !== '' && u.toLowerCase() !== 'admin');
 
         // AISLAMIENTO: Si no es Admin, el usuario solo puede verse a sí mismo en el selector
-        const curUserRaw = (session.usuario || '').trim();
+        const curUserLogin = (session.usuario || '').trim().toLowerCase();
+        const curUserName = (session.nombre || '').trim().toLowerCase();
         const isAdminStrict = session.rol === 'admin';
         
-        let users = uniqueUsers;
-        if (!isAdminStrict) {
-            if (session.rol === 'supervisor') {
-                // El supervisor ve su nombre Y el de sus técnicos asignados
-                const misTecnicos = (appState.usuariosPreventivo || [])
-                    .filter(u => (u.UsuarioSistema || u.usuariosistema || '').toLowerCase().trim() === curUserRaw.toLowerCase())
-                    .map(u => (u.Nombre || u.nombre || '').trim().toLowerCase());
+        let users = [];
+        if (isAdminStrict) {
+            users = uniqueUsers;
+        } else if (session.rol === 'supervisor') {
+            // El supervisor SOLO ve a sus técnicos (Yolfranlle y Yordan), NO se ve a sí mismo
+            const supervisorId = (session.usuario || '').toLowerCase().trim();
+            const supervisorName = (session.nombre || '').toLowerCase().trim();
+
+            const targetTechs = ['yolfranlle', 'yordan'];
+            
+            // 1. Buscamos en la lista global de usuarios detectados (uniqueUsers)
+            users = uniqueUsers.filter(u => {
+                const low = u.toLowerCase();
+                // Excluir al supervisor
+                if (low === supervisorId || low === supervisorName || low.includes('ingrid')) return false;
                 
-                users = uniqueUsers.filter(u => 
-                    u.toLowerCase() === curUserRaw.toLowerCase() || 
-                    misTecnicos.includes(u.toLowerCase())
-                );
-            } else {
-                // Otros roles (Usuario, Visualizador) solo se ven a sí mismos
-                users = uniqueUsers.filter(u => u.toLowerCase() === curUserRaw.toLowerCase());
+                // Incluir solo si es uno de los técnicos objetivo
+                return targetTechs.some(tech => low.includes(tech));
+            });
+
+            // 2. Si no hay coincidencias en las tareas, buscamos en el directorio preventivo
+            if (users.length < 2) {
+                (appState.usuariosPreventivo || []).forEach(u => {
+                    const n = (u.Nombre || u.nombre || '').trim();
+                    const s = (u.UsuarioSistema || u.usuariosistema || u.UsuarioTecnico || u.usuariotecnico || '').trim();
+                    
+                    [n, s].forEach(val => {
+                        if (val && targetTechs.some(tech => val.toLowerCase().includes(tech))) {
+                            if (!users.some(ext => ext.toLowerCase() === val.toLowerCase())) {
+                                users.push(val);
+                            }
+                        }
+                    });
+                });
             }
+
+            // 3. Fallback final: Si siguen sin aparecer, los forzamos
+            targetTechs.forEach(tech => {
+                if (!users.some(u => u.toLowerCase().includes(tech))) {
+                    users.push(tech);
+                }
+            });
+
+            // Limpieza extra: asegurar que NUNCA aparezca ingrid ni admin
+            users = users.filter(u => {
+                const l = u.toLowerCase();
+                return l !== supervisorId && l !== supervisorName && !l.includes('ingrid') && l !== 'admin';
+            });
+        } else {
+            // Otros roles (Usuario, Visualizador) solo se ven a sí mismos
+            users = uniqueUsers.filter(u => u.toLowerCase() === curUserLogin || u.toLowerCase() === curUserName);
+            if (users.length === 0) users = [session.usuario];
         }
 
         users = users.sort();
@@ -83,9 +128,11 @@ Object.assign(window.ui, {
 
         const filtrado = tareas.filter(t => {
             const tUsr = (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim();
-            if (selectedUsr !== '' && tUsr !== selectedUsr) return false;
+            const tNom = (t.Nombre || t.nombre || '').toLowerCase().trim();
             
-            if (fNom && !(t.Nombre||'').toLowerCase().includes(fNom)) return false;
+            if (selectedUsr !== '' && tUsr !== selectedUsr && tNom !== selectedUsr) return false;
+            
+            if (fNom && !tNom.includes(fNom)) return false;
             if (fMes && String(t.Mes) !== String(fMes)) return false;
             if (fEst && String(t.Estado) !== String(fEst)) return false;
             return true;
@@ -223,9 +270,10 @@ Object.assign(window.ui, {
 
         const filtrado = tareas.filter(t => {
             const tUsr = (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim();
-            if (selectedUsr !== '' && tUsr !== selectedUsr) return false;
+            const tNom = (t.Nombre || t.nombre || '').toLowerCase().trim();
+            if (selectedUsr !== '' && tUsr !== selectedUsr && tNom !== selectedUsr) return false;
 
-            if (fNom && !(t.Nombre||'').toLowerCase().includes(fNom)) return false;
+            if (fNom && !tNom.includes(fNom)) return false;
             if (fSem && String(t.Semana) !== String(fSem)) return false;
             if (fEst && String(t.Estado) !== String(fEst)) return false;
             return true;
@@ -337,8 +385,21 @@ Object.assign(window.ui, {
             const usuSist = (u.UsuarioSistema || u.usuariosistema || '').toLowerCase();
             
             // Filtro por selector (para supervisor/admin)
-            const isAdminCreated = usuSist === 'admin' || usuSist === '';
-            if (selectedUsr !== '' && !nombre.includes(selectedUsr) && !usuSist.includes(selectedUsr) && !isAdminCreated) return false;
+            // Si el selector está vacío (Admin o Supervisor viendo todo), permitimos pasar
+            if (selectedUsr === '') return true;
+
+            // Si hay selección, la fila (técnico) debe coincidir con la selección
+            // O el técnico debe pertenecer al supervisor seleccionado
+            const coincideNombre = nombre.includes(selectedUsr);
+            const coincideUsuario = usuSist.includes(selectedUsr);
+            
+            // Si el Supervisor se selecciona a SI MISMO en el dropdown, debe ver a todos sus técnicos
+            // usuSist es el supervisor del tecnico
+            const esMio = usuSist === selectedUsr;
+
+            if (coincideNombre || coincideUsuario || esMio) return true;
+            
+            return false;
             
             // Filtro por búsqueda manual
             return (!fUsr || nombre.includes(fUsr)) && (!fAre || area.includes(fAre));
@@ -471,7 +532,11 @@ Object.assign(window.ui, {
 
         const filterByUser = (arr) => {
             if (selectedUsr === '') return arr;
-            return arr.filter(t => (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim() === selectedUsr);
+            return arr.filter(t => {
+                const u = (t.UsuarioSistema || t.usuariosistema || '').toLowerCase().trim();
+                const n = (t.Nombre || t.nombre || '').toLowerCase().trim();
+                return u === selectedUsr || n === selectedUsr;
+            });
         };
 
         const tRec = filterByUser(state.tareasRecurrentes);
@@ -604,10 +669,13 @@ Object.assign(window.ui, {
                 return true;
             }
             if (isSupervisor) {
-                const misTecnicos = (window.MainApp.state.usuariosPreventivo || [])
-                    .filter(u => (u.UsuarioSistema || u.usuariosistema || '').toLowerCase().trim() === curUser)
-                    .map(u => (u.Nombre || u.nombre || '').trim().toLowerCase());
-                const esDeMiEquipo = bUsr === curUser || misTecnicos.includes(bUsr);
+                const misTecs = (window.MainApp.state.usuariosPreventivo || [])
+                    .filter(u => (u.UsuarioSistema || u.usuariosistema || '').toLowerCase().trim() === curUser);
+                
+                const misTecNames = misTecs.map(u => (u.Nombre || u.nombre || '').trim().toLowerCase());
+                const misTecSystem = misTecs.map(u => (u.UsuarioTecnico || u.usuariotecnico || '').trim().toLowerCase());
+
+                const esDeMiEquipo = bUsr === curUser || misTecNames.includes(bUsr) || misTecSystem.includes(bUsr);
                 
                 if (selectedUsr !== '') {
                     return bUsr === selectedUsr && esDeMiEquipo;

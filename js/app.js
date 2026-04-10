@@ -633,10 +633,26 @@ const MainApp = {
     // ── EVENTOS DOM ──
     inicializarEventos() {
         // Búsqueda global
-        document.getElementById('global-search').addEventListener('input', e => {
-            const term = e.target.value.toLowerCase().trim();
-            if (this.state.vistaActual === 'productos') ui.renderizarProductos(this.state.productos, term);
-            if (this.state.vistaActual === 'inventario') ui.renderizarInventario(this.state.productos, term);
+        const searchInput = document.getElementById('global-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', e => {
+                const term = e.target.value.toLowerCase().trim();
+                if (this.state.vistaActual === 'productos') ui.renderizarProductos(this.state.productos, term);
+                if (this.state.vistaActual === 'inventario') ui.renderizarInventario(this.state.productos, term);
+            });
+        }
+
+        // Selección de filas (Resaltado Premium solicitado por el usuario)
+        document.addEventListener('click', (e) => {
+            const tr = e.target.closest('tbody tr');
+            if (tr && !e.target.closest('button')) {
+                // Limpiar otros resaltados en la misma tabla
+                const table = tr.closest('table');
+                if (table) {
+                    table.querySelectorAll('tr.selected-row').forEach(row => row.classList.remove('selected-row'));
+                    tr.classList.add('selected-row');
+                }
+            }
         });
 
         // Filtros de Productos
