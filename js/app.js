@@ -256,7 +256,6 @@ const MainApp = {
             ui.renderizarTareasSemanalesV3(this.state.tareasSemanales);
             ui.renderizarPreventivoV3(this.state.planPreventivo);
             if (ui.renderizarDashboardTareas) ui.renderizarDashboardTareas(this.state);
-            if (ui.renderizarDashboardTareas) ui.renderizarDashboardTareas(this.state);
             ui.renderizarResponsables(this.state.usuariosPreventivo || []);
             ui.renderizarBitacoraV3(this.state.bitacora);
         }

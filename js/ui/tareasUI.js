@@ -90,7 +90,17 @@ Object.assign(window.ui, {
             if (users.length === 0) users = [session.usuario];
         }
 
-        users = users.sort();
+        // Unificar nombres y limpiar duplicados (Case-insensitive)
+        const userSet = new Set();
+        const finalUsers = [];
+        users.forEach(u => {
+            if (!userSet.has(u.toLowerCase())) {
+                userSet.add(u.toLowerCase());
+                finalUsers.push(u);
+            }
+        });
+
+        users = finalUsers.sort();
         
         const currentSelected = appState[`selectedUser_${modulo}`] || '';
 

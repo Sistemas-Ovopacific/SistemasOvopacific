@@ -150,7 +150,7 @@ function guardarItem(nombreHoja, item, idField = "id") {
   
   if (rowIndex !== -1) sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   else sheet.appendRow(row);
-  return { success: true, data: item };
+  return { success: true, data: item, mensaje: "Registro guardado correctamente" };
 }
 
 function eliminarItem(nombreHoja, id, idField = "id") {
@@ -202,14 +202,14 @@ function registrarMovimiento(tipo, mov) {
     if(pH[j].toLowerCase() === 'id') idCol = j;
     if(pH[j].toLowerCase() === 'cantidad') cCol = j;
   }
-  for (let i = pHIdx + 1; i < pData.length; i++) {
     if (String(pData[i][idCol]).trim() === String(idProd).trim()) {
       let cur = Number(pData[i][cCol]) || 0;
-      pSheet.getRange(i + 1, cCol + 1).setValue(tipo === 'entrada' ? cur + Number(mov.Cantidad) : cur - Number(mov.Cantidad));
-      return { success: true };
+      let nuevoStock = tipo === 'entrada' ? cur + Number(mov.Cantidad) : cur - Number(mov.Cantidad);
+      pSheet.getRange(i + 1, cCol + 1).setValue(nuevoStock);
+      return { success: true, stock_nuevo: nuevoStock, mensaje: "Movimiento registrado" };
     }
   }
-  return { error: "Producto no encontrado" };
+  return { error: "Producto no encontrado en la base de datos" };
 }
 
 function crearMesesEspecificos(nombre, meses, usuario) {
@@ -242,9 +242,18 @@ function addPreventivoMasivo(data) {
   const fecha = data.FechaRealizacion || "";
   const usuarioSistema = data.UsuarioSistema || "Admin";
   
-  const usuariosData = usuarios.slice(1).filter(u => {
-      // Según tu imagen, UsuarioSistema está en la Columna D (índice 3)
-      const uSist = (u[3] || "").toString().toLowerCase();
+  // Buscar dinámicamente las columnas necesarias (ID y UsuarioSistema)
+  const hIdx = getHeaderRowIndex(usuarios);
+  const headers = usuarios[hIdx].map(h => h.toString().toLowerCase().trim());
+  let idCol = headers.indexOf('id');
+  let uSistCol = headers.indexOf('usuariosistema');
+  if (uSistCol === -1) uSistCol = headers.indexOf('usuariosistemas'); // Fallback común
+  
+  if (idCol === -1) idCol = 0; // Fallback a columna A
+
+  const usuariosData = usuarios.slice(hIdx + 1).filter(u => {
+      if (uSistCol === -1) return true; // Si no hay columna de supervisor, incluimos a todos
+      const uSist = (u[uSistCol] || "").toString().toLowerCase().trim();
       if (usuarioSistema.toLowerCase() === "admin") return true; 
       return uSist === usuarioSistema.toLowerCase();
   });
