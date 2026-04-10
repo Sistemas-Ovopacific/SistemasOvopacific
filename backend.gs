@@ -47,6 +47,18 @@ function doGet(e) {
       case 'getSalidas': return respuestaJSON(leerHoja(NOMBRES_HOJAS.SALIDAS));
       case 'getEntregas': return respuestaJSON(leerHoja(NOMBRES_HOJAS.ENTREGAS));
       case 'getUsuarios': return respuestaJSON(leerHoja(NOMBRES_HOJAS.USUARIOS));
+      case 'getAllData':
+        return respuestaJSON({
+          productos: leerHoja(NOMBRES_HOJAS.PRODUCTOS),
+          entradas: leerHoja(NOMBRES_HOJAS.ENTRADAS),
+          salidas: leerHoja(NOMBRES_HOJAS.SALIDAS),
+          entregas: leerHoja(NOMBRES_HOJAS.ENTREGAS),
+          tareasRecurrentes: leerHoja(NOMBRES_HOJAS.TAREAS_MENSUALES),
+          tareasSemanales: leerHoja(NOMBRES_HOJAS.TAREAS_SEMANALES),
+          planPreventivo: leerHoja(NOMBRES_HOJAS.PLAN_PREVENTIVO),
+          usuariosPreventivo: leerHoja(NOMBRES_HOJAS.USUARIOS_PREVENTIVO),
+          bitacora: leerHoja(NOMBRES_HOJAS.BITACORA)
+        });
       default: return respuestaJSON({ error: "Acción no reconocida" });
     }
   } catch (err) { return respuestaJSON({ error: err.message }); }
@@ -202,6 +214,7 @@ function registrarMovimiento(tipo, mov) {
     if(pH[j].toLowerCase() === 'id') idCol = j;
     if(pH[j].toLowerCase() === 'cantidad') cCol = j;
   }
+  for (let i = pHIdx + 1; i < pData.length; i++) {
     if (String(pData[i][idCol]).trim() === String(idProd).trim()) {
       let cur = Number(pData[i][cCol]) || 0;
       let nuevoStock = tipo === 'entrada' ? cur + Number(mov.Cantidad) : cur - Number(mov.Cantidad);

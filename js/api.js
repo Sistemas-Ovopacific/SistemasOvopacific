@@ -2,7 +2,7 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyjIp4bCGLZ159pOKy7t9MGdXaAK8fFR2aWzs6VUGAdDDelLyRZGGDroaovA1tO4P4m-Q/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzibhe3M-AROrxuGl44NsPnXG77Yt2RMc_Lkqzp_KYuR2BZse9sadbJ0V3TLFDzUhFT/exec';
 
 const api = {
     // Clave para localStorage
@@ -31,6 +31,10 @@ const api = {
         const res = await fetch(`${GAS_URL}?action=${action}&t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
+    },
+
+    async getAllData() {
+        return this.get('getAllData');
     },
 
     async login(usuario, password) {

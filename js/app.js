@@ -327,25 +327,18 @@ const MainApp = {
         ui.setConexionStatus('connecting');
 
         try {
-            const [prods, ents, sals, entregas, tareasData, usuarios] = await Promise.all([
-                api.get('getProductos'),
-                api.get('getEntradas'),
-                api.get('getSalidas'),
-                api.get('getEntregas').catch(err => { console.error('[GET Entregas Failed]', err); return []; }), 
-                api.get('getTareasData').catch(err => { console.error('[GET TareasData Failed]', err); return {}; }),
-                api.get('getUsuarios').catch(err => { console.error('[GET Usuarios Failed]', err); return []; })
-            ]);
+            const data = await api.getAllData();
 
-            this.state.productos = Array.isArray(prods) ? prods : (prods && prods.error ? [] : prods);
-            this.state.entradas = Array.isArray(ents) ? ents : (ents && ents.error ? [] : ents);
-            this.state.salidas = Array.isArray(sals) ? sals : (sals && sals.error ? [] : sals);
-            this.state.entregas = Array.isArray(entregas) ? entregas : (entregas && entregas.error ? [] : entregas);
+            this.state.productos = Array.isArray(data.productos) ? data.productos : [];
+            this.state.entradas = Array.isArray(data.entradas) ? data.entradas : [];
+            this.state.salidas = Array.isArray(data.salidas) ? data.salidas : [];
+            this.state.entregas = Array.isArray(data.entregas) ? data.entregas : [];
             
-            const tRec = tareasData.tareasRecurrentes || [];
-            const tSem = tareasData.tareasSemanales || [];
-            const pPrev = tareasData.planPreventivo || []; 
-            const bit = tareasData.bitacora || [];
-            const uPrev = tareasData.usuariosPreventivo || [];
+            const tRec = data.tareasRecurrentes || [];
+            const tSem = data.tareasSemanales || [];
+            const pPrev = data.planPreventivo || []; 
+            const bit = data.bitacora || [];
+            const uPrev = data.usuariosPreventivo || [];
             
             // FILTRADO POR USUARIO (Aislamiento de tareas)
             const session = api.getSession() || {};
@@ -357,7 +350,6 @@ const MainApp = {
                 return arr.filter(item => {
                     const uStr = (item.UsuarioSistema || item.usuariosistema || item.UsuarioSistemas || item.usuariosistemas || "").toString().trim().toLowerCase();
                     const uDoc = (item.Usuario || item.usuario || item.UsuarioId || "").toString().trim().toLowerCase();
-                    // Fallback: Si el sistema no registro quien hizo la accion (uStr vacio), permitimos ver si el usuario asignado coincide (uDoc)
                     return uStr === curUser || uDoc === curUser || uStr === ""; 
                 });
             };
@@ -365,13 +357,9 @@ const MainApp = {
             this.state.tareasRecurrentes = f(tRec);
             this.state.tareasSemanales = f(tSem);
             this.state.bitacora = f(bit);
-
-            // La matriz preventiva y los usuarios del sistema se ven para todos, sin filtro
             this.state.planPreventivo = pPrev;
             this.state.usuariosPreventivo = uPrev;
-
-            this.state.inicioTareas = Array.isArray(tareasData.inicioTareas) ? tareasData.inicioTareas : [];
-            this.state.usuariosAdmin = Array.isArray(usuarios) ? usuarios : [];
+            this.state.usuariosAdmin = Array.isArray(data.usuarios) ? data.usuarios : [];
 
             ui.setConexionStatus('ok');
             this.actualizarUI();
@@ -391,17 +379,12 @@ const MainApp = {
     async cargarSoloInventario() {
         utils.mostrarLoader('Actualizando inventario...');
         try {
-            const [prods, ents, sals, entregas] = await Promise.all([
-                api.get('getProductos'),
-                api.get('getEntradas'),
-                api.get('getSalidas'),
-                api.get('getEntregas').catch(() => [])
-            ]);
+            const data = await api.getAllData();
 
-            this.state.productos = Array.isArray(prods) ? prods : [];
-            this.state.entradas  = Array.isArray(ents)  ? ents  : [];
-            this.state.salidas   = Array.isArray(sals)  ? sals  : [];
-            this.state.entregas  = Array.isArray(entregas) ? entregas : [];
+            this.state.productos = Array.isArray(data.productos) ? data.productos : [];
+            this.state.entradas  = Array.isArray(data.entradas)  ? data.entradas  : [];
+            this.state.salidas   = Array.isArray(data.salidas)   ? data.salidas   : [];
+            this.state.entregas  = Array.isArray(data.entregas)  ? data.entregas  : [];
 
             this.actualizarUI();
         } catch (err) {
