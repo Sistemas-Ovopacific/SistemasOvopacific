@@ -15,8 +15,8 @@ const NOMBRES_HOJAS = {
   USUARIOS: 'Usuarios'
 };
 
-const SPREADSHEET_ID = '1WAI12VaIhhZDHefdfryjpQjXcmIAhNmwVPkqgqo3orI';
-const DRIVE_FOLDER_ID = '1MRlf29HmpJkc5Zi8_yjrQikKv0cWvVqB'; 
+const SPREADSHEET_ID = 'PONER_ID_AQUÍ';
+const DRIVE_FOLDER_ID = 'PONER_ID_AQUÍ'; 
 
 function getSpreadsheet() {
   try {
