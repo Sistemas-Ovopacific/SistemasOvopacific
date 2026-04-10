@@ -203,10 +203,11 @@ Object.assign(window.MainApp, {
         }
 
         const nuevaEntrega = {
-            id: Date.now().toString(),
+            id: 'ENT-' + Date.now(),
             Nombre: nombre,
             Fecha: fecha,
-            Descripcion: desc
+            Descripcion: desc,
+            Estado: 'Entregado'
         };
 
         utils.mostrarLoader('Registrando entrega...');

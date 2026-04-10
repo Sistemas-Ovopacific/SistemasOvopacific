@@ -20,9 +20,42 @@ const DRIVE_FOLDER_ID = 'PONER_ID_AQUÍ';
 
 function getSpreadsheet() {
   try {
-    if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
-    return SpreadsheetApp.getActiveSpreadsheet();
-  } catch (e) { throw new Error("No se pudo acceder a la hoja."); }
+    // Si el ID parece ser el de ejemplo o está vacío, intentamos la activa
+    if (!SPREADSHEET_ID || SPREADSHEET_ID.length < 15 || SPREADSHEET_ID.includes('TU_ID_DE_HOJA') || SPREADSHEET_ID.includes('PONER_ID')) {
+      const active = SpreadsheetApp.getActiveSpreadsheet();
+      if (active) return active;
+      throw new Error("El script no está vinculado a ninguna hoja activa.");
+    }
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (e) { 
+    console.error("Error en getSpreadsheet:", e.message);
+    try {
+      return SpreadsheetApp.getActiveSpreadsheet();
+    } catch(e2) {
+      throw new Error("Error de conexión: Verifica que SPREADSHEET_ID sea el correcto.");
+    }
+  }
+}
+
+/**
+ * Busca una hoja por nombre de forma insensible a mayúsculas/minúsculas y espacios.
+ */
+function getSheetSafe(nombre) {
+  const ss = getSpreadsheet();
+  const sheets = ss.getSheets();
+  const target = nombre.toLowerCase().trim();
+  
+  // 1. Intento exacto
+  let sheet = ss.getSheetByName(nombre);
+  if (sheet) return sheet;
+  
+  // 2. Intento insensible
+  for (let i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName().toLowerCase().trim() === target) {
+      return sheets[i];
+    }
+  }
+  return null;
 }
 
 function respuestaJSON(data) {
@@ -103,8 +136,7 @@ function getHeaderRowIndex(data) {
 }
 
 function leerHoja(nombreHoja) {
-  const ss = getSpreadsheet();
-  let sheet = ss.getSheetByName(nombreHoja);
+  let sheet = getSheetSafe(nombreHoja);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   if (data.length === 0) return [];
@@ -129,8 +161,11 @@ function leerHoja(nombreHoja) {
 
 function guardarItem(nombreHoja, item, idField = "id") {
   const ss = getSpreadsheet();
-  let sheet = ss.getSheetByName(nombreHoja);
-  if (!sheet) { sheet = ss.insertSheet(nombreHoja); sheet.appendRow(Object.keys(item)); }
+  let sheet = getSheetSafe(nombreHoja);
+  if (!sheet) { 
+    sheet = ss.insertSheet(nombreHoja); 
+    sheet.appendRow(Object.keys(item)); 
+  }
   const data = sheet.getDataRange().getValues();
   const hIdx = getHeaderRowIndex(data);
   const h = data[hIdx].map(x => x.toString().trim());
@@ -166,7 +201,7 @@ function guardarItem(nombreHoja, item, idField = "id") {
 }
 
 function eliminarItem(nombreHoja, id, idField = "id") {
-  const sheet = getSpreadsheet().getSheetByName(nombreHoja);
+  const sheet = getSheetSafe(nombreHoja);
   const data = sheet.getDataRange().getValues();
   const hIdx = getHeaderRowIndex(data);
   const h = data[hIdx].map(x => x.toString().trim());
@@ -180,7 +215,7 @@ function eliminarItem(nombreHoja, id, idField = "id") {
 }
 
 function eliminarTareasPorNombre(nombreHoja, nombreTarea) {
-  const sheet = getSpreadsheet().getSheetByName(nombreHoja);
+  const sheet = getSheetSafe(nombreHoja);
   const data = sheet.getDataRange().getValues();
   const hIdx = getHeaderRowIndex(data);
   const h = data[hIdx].map(x => x.toString().trim());
@@ -311,7 +346,20 @@ function subirEvidenciaDrive(p) {
   
   const bytes = Utilities.base64Decode(p.base64Data);
   const blob = Utilities.newBlob(bytes, p.mimeType, p.filename);
-  let parent = DRIVE_FOLDER_ID ? DriveApp.getFolderById(DRIVE_FOLDER_ID) : DriveApp.createFolder("Evidencias Sistemas");
+  // Si el ID es el de ejemplo o está vacío, creamos una carpeta por defecto
+  let parent;
+  if (!DRIVE_FOLDER_ID || DRIVE_FOLDER_ID.includes('TU_ID_DE_CARPETA') || DRIVE_FOLDER_ID.includes('PONER_ID')) {
+    const folders = DriveApp.getFoldersByName("Evidencias Sistemas");
+    parent = folders.hasNext() ? folders.next() : DriveApp.createFolder("Evidencias Sistemas");
+  } else {
+    try {
+      parent = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    } catch (e) {
+      // Si el ID manual falla, caer en la carpeta por defecto
+      const folders = DriveApp.getFoldersByName("Evidencias Sistemas");
+      parent = folders.hasNext() ? folders.next() : DriveApp.createFolder("Evidencias Sistemas");
+    }
+  }
   let folder = parent.createFolder((p.Titulo || "Doc").replace(/[/\\?%*:|"<>]/g, '-') + "_" + new Date().getTime());
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -322,15 +370,31 @@ function subirEvidenciaDrive(p) {
 }
 
 function login(usuario, password) {
-  const data = leerHoja(NOMBRES_HOJAS.USUARIOS);
-  const uInput = String(usuario).trim().toLowerCase();
-  const pInput = String(password).trim();
-  for (let i = 0; i < data.length; i++) {
-    const user = (data[i].usuario || data[i].Username || "").toString().trim().toLowerCase();
-    const pass = (data[i].password || data[i].Password || "").toString().trim();
-    if (user === uInput && pass === pInput) {
-      return respuestaJSON({ success: true, usuario: user, nombre: data[i].nombre || data[i].Nombre || user, rol: String(data[i].rol || data[i].Rol || "usuario").toLowerCase() });
+  try {
+    const data = leerHoja(NOMBRES_HOJAS.USUARIOS);
+    if (!data || data.length === 0) {
+      return respuestaJSON({ error: "No se encontró la hoja de usuarios o está vacía." });
     }
+    
+    const uInput = String(usuario || "").trim().toLowerCase();
+    const pInput = String(password || "").trim();
+    
+    for (let i = 0; i < data.length; i++) {
+      const uRow = data[i];
+      const user = (uRow.usuario || uRow.Username || uRow.Usuario || "").toString().trim().toLowerCase();
+      const pass = (uRow.password || uRow.Password || uRow.Contrasena || "").toString().trim();
+      
+      if (user === uInput && pass === pInput) {
+        return respuestaJSON({ 
+          success: true, 
+          usuario: user, 
+          nombre: uRow.nombre || uRow.Nombre || user, 
+          rol: String(uRow.rol || uRow.Rol || "usuario").toLowerCase() 
+        });
+      }
+    }
+    return respuestaJSON({ error: "Usuario o contraseña incorrectos" });
+  } catch (err) {
+    return respuestaJSON({ error: "Error en login: " + err.message });
   }
-  return respuestaJSON({ error: "Usuario o contraseña incorrectos" });
 }

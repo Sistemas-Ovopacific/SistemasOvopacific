@@ -2,7 +2,7 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwszfvqAMWVatnCfzFkPnXNNC1VmBdCW9cg5ssZRk34SpKVCFvw93nSBfsX4X4BdnZg/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB9kspo_LX0BJoH8ZmH1A4ENN91Sn9vHoLQppV7AI8OlES1NXCJjISj_BGQmUxXGTk/exec';
 
 const api = {
     // Clave para localStorage
