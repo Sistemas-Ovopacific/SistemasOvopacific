@@ -293,7 +293,7 @@
             ══════════════════════════════════════════ -->
             <div class="view-section active" id="view-tareas-dashboard">
                 <div id="visualizer-filter-dashboard" class="visualizer-filter-bar" style="display:none;"></div>
-                
+
                 <div class="panel">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-chart-pie"></i> Cumplimiento de Tareas</h2>
@@ -312,7 +312,9 @@
                                     <div class="efficiency-badge" id="eff-mensual">0%</div>
                                 </div>
                                 <canvas id="chart-mensuales"></canvas>
-                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-mensual" style="width: 0%"></div></div>
+                                <div class="progress-bar-custom">
+                                    <div class="progress-fill-custom" id="prog-mensual" style="width: 0%"></div>
+                                </div>
                             </div>
                             <div class="chart-panel-custom">
                                 <div class="chart-header-custom">
@@ -320,7 +322,9 @@
                                     <div class="efficiency-badge" id="eff-semanal">0%</div>
                                 </div>
                                 <canvas id="chart-semanales"></canvas>
-                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-semanal" style="width: 0%"></div></div>
+                                <div class="progress-bar-custom">
+                                    <div class="progress-fill-custom" id="prog-semanal" style="width: 0%"></div>
+                                </div>
                             </div>
                             <div class="chart-panel-custom">
                                 <div class="chart-header-custom">
@@ -328,7 +332,9 @@
                                     <div class="efficiency-badge" id="eff-preventivo">0%</div>
                                 </div>
                                 <canvas id="chart-preventivo"></canvas>
-                                <div class="progress-bar-custom"><div class="progress-fill-custom" id="prog-preventivo" style="width: 0%"></div></div>
+                                <div class="progress-bar-custom">
+                                    <div class="progress-fill-custom" id="prog-preventivo" style="width: 0%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -340,7 +346,7 @@
             ══════════════════════════════════════════ -->
             <div class="view-section" id="view-tareas-recurrentes">
                 <div id="visualizer-filter-recurrentes" class="visualizer-filter-bar" style="display:none;"></div>
-                
+
                 <div class="panel mant-add-panel">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-plus-circle"></i> Tarea Mensual</h2>
@@ -351,12 +357,15 @@
                             <div class="form-group">
                                 <label for="tm-nombre">Nombre de la Actividad</label>
                                 <input type="text" id="tm-nombre" placeholder="Ej: Limpieza de servidores..." required>
-                                <span style="font-size:0.8rem; color:#64748b; margin-top:5px; display:block;">ℹ️ Seleccione los meses en que se realizará esta tarea. (Mínimo 1)</span>
+                                <span style="font-size:0.8rem; color:#64748b; margin-top:5px; display:block;">ℹ️
+                                    Seleccione los meses en que se realizará esta tarea. (Mínimo 1)</span>
                             </div>
-                            
+
                             <div class="form-group" style="margin-top:15px;">
-                                <label style="margin-bottom:8px; display:block; font-weight:600;"><i class="fa-regular fa-calendar-check"></i> Meses de Aplicación</label>
-                                <div id="tr-meses-checkboxes" style="display:flex; flex-wrap:wrap; gap:12px; background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+                                <label style="margin-bottom:8px; display:block; font-weight:600;"><i
+                                        class="fa-regular fa-calendar-check"></i> Meses de Aplicación</label>
+                                <div id="tr-meses-checkboxes"
+                                    style="display:flex; flex-wrap:wrap; gap:12px; background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
                                     <!-- Creados dinámicamente -->
                                 </div>
                             </div>
@@ -365,7 +374,8 @@
                                 <button type="submit" class="btn btn-primary" id="btn-save-tm">
                                     <i class="fa-solid fa-save"></i> Guardar Tarea
                                 </button>
-                                <button type="button" class="btn btn-outline" id="btn-cancel-tm" style="display:none;" onclick="MainApp.cancelEditMensual()">
+                                <button type="button" class="btn btn-outline" id="btn-cancel-tm" style="display:none;"
+                                    onclick="MainApp.cancelEditMensual()">
                                     Cancelar
                                 </button>
                             </div>
@@ -374,10 +384,12 @@
                 </div>
 
                 <div class="panel panel-no-padding">
-                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div class="panel-header"
+                        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h2><i class="fa-solid fa-list"></i> Listado Mensual</h2>
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <input type="text" id="filter-tm-nombre" class="form-control-sm" placeholder="Buscar por Nombre">
+                            <input type="text" id="filter-tm-nombre" class="form-control-sm"
+                                placeholder="Buscar por Nombre">
                             <select id="filter-tm-mes" class="form-select form-control-sm">
                                 <option value="">Todos los Meses</option>
                                 <option value="1">Enero</option>
@@ -398,14 +410,16 @@
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Finalizada">Finalizada</option>
                             </select>
-                            <button id="btn-masivo-mensual" class="btn btn-success btn-sm"><i class="fa-solid fa-check-double"></i> Finalizar Seleccionadas</button>
+                            <button id="btn-masivo-mensual" class="btn btn-success btn-sm"><i
+                                    class="fa-solid fa-check-double"></i> Finalizar Seleccionadas</button>
                         </div>
                     </div>
                     <div class="panel-body">
                         <table class="preventivo-table" style="width:100%; border-collapse:collapse;">
                             <thead>
                                 <tr>
-                                    <th style="width:40px;"><input type="checkbox" id="check-all-tm" onchange="window.ui.toggleAllChecks('check-all-tm', '.tm-check')"></th>
+                                    <th style="width:40px;"><input type="checkbox" id="check-all-tm"
+                                            onchange="window.ui.toggleAllChecks('check-all-tm', '.tm-check')"></th>
                                     <th>Actividad</th>
                                     <th>Mes</th>
                                     <th>Fechas (Creación / Fin)</th>
@@ -420,7 +434,7 @@
                 </div>
             </div>
 
-<!-- ══════════════════════════════════════════
+            <!-- ══════════════════════════════════════════
                  VISTA: TAREAS SEMANALES (LUN-VIE)
             ══════════════════════════════════════════ -->
             <div class="view-section" id="view-tareas-semanales">
@@ -436,7 +450,8 @@
                             <div class="form-row">
                                 <div class="form-group full-width">
                                     <label for="ts-nombre">Actividad Semanal</label>
-                                    <input type="text" id="ts-nombre" placeholder="Ej: Revisión diaria de backups..." required>
+                                    <input type="text" id="ts-nombre" placeholder="Ej: Revisión diaria de backups..."
+                                        required>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -453,7 +468,8 @@
                                 <button type="submit" class="btn btn-primary" id="btn-save-ts">
                                     <i class="fa-solid fa-save"></i> Guardar Tarea Semanal
                                 </button>
-                                <button type="button" class="btn btn-outline" id="btn-cancel-ts" style="display:none;" onclick="MainApp.cancelarEdicionSemanalV3()">
+                                <button type="button" class="btn btn-outline" id="btn-cancel-ts" style="display:none;"
+                                    onclick="MainApp.cancelarEdicionSemanalV3()">
                                     Cancelar
                                 </button>
                             </div>
@@ -462,24 +478,29 @@
                 </div>
 
                 <div class="panel panel-no-padding">
-                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div class="panel-header"
+                        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h2><i class="fa-solid fa-calendar-week"></i> Historial Semanal</h2>
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <input type="text" id="filter-ts-nombre" class="form-control-sm" placeholder="Buscar Actividad">
-                            <input type="number" id="filter-ts-semana" class="form-control-sm" placeholder="Semana" style="width: 80px;">
+                            <input type="text" id="filter-ts-nombre" class="form-control-sm"
+                                placeholder="Buscar Actividad">
+                            <input type="number" id="filter-ts-semana" class="form-control-sm" placeholder="Semana"
+                                style="width: 80px;">
                             <select id="filter-ts-estado" class="form-select form-control-sm">
                                 <option value="">Todos los Estados</option>
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="Finalizada">Finalizada</option>
                             </select>
-                            <button id="btn-masivo-semanal" class="btn btn-success btn-sm"><i class="fa-solid fa-check-double"></i> Finalizar Seleccionadas</button>
+                            <button id="btn-masivo-semanal" class="btn btn-success btn-sm"><i
+                                    class="fa-solid fa-check-double"></i> Finalizar Seleccionadas</button>
                         </div>
                     </div>
                     <div class="panel-body">
                         <table class="preventivo-table" style="width:100%; border-collapse:collapse;">
                             <thead>
                                 <tr>
-                                    <th style="width:40px;"><input type="checkbox" id="check-all-ts" onchange="window.ui.toggleAllChecks('check-all-ts', '.ts-check')"></th>
+                                    <th style="width:40px;"><input type="checkbox" id="check-all-ts"
+                                            onchange="window.ui.toggleAllChecks('check-all-ts', '.ts-check')"></th>
                                     <th>Actividad</th>
                                     <th>Semana</th>
                                     <th>Fechas (Creación / Fin)</th>
@@ -494,7 +515,7 @@
                 </div>
             </div>
 
-<!-- ══════════════════════════════════════════
+            <!-- ══════════════════════════════════════════
                  VISTA: MANTENIMIENTO PREVENTIVO V3.0
             ══════════════════════════════════════════ -->
             <div class="view-section" id="view-tareas-preventivo">
@@ -505,11 +526,15 @@
                         <h2><i class="fa-solid fa-shield-halved"></i> Registro de Mantenimiento</h2>
                     </div>
                     <div class="panel-body" style="display:flex; flex-direction:column; gap:20px;">
-                        
+
                         <!-- Bloque 1: Asignación Masiva -->
-                        <div style="background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.2); padding: 15px; border-radius: 8px;">
-                            <h3 style="margin-top:0; color:#6366f1;"><i class="fa-solid fa-users-gear"></i> Asignación Masiva a Todos los Usuarios</h3>
-                            <p style="font-size:0.9rem; margin-bottom:15px;">Usa esta opción para registrar mantenimiento a todos los usuarios de la base de datos simultáneamente para un mes específico.</p>
+                        <div
+                            style="background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.2); padding: 15px; border-radius: 8px;">
+                            <h3 style="margin-top:0; color:#6366f1;"><i class="fa-solid fa-users-gear"></i> Asignación
+                                Masiva a Todos los Usuarios</h3>
+                            <p style="font-size:0.9rem; margin-bottom:15px;">Usa esta opción para registrar
+                                mantenimiento a todos los usuarios de la base de datos simultáneamente para un mes
+                                específico.</p>
                             <form id="form-prev-masivo" class="form-row" style="align-items:flex-end;">
                                 <div class="form-group field-half">
                                     <label for="prev-masivo-mes">Mes de Mantenimiento</label>
@@ -539,16 +564,21 @@
                                 </div>
                                 <input type="hidden" id="prev-masivo-fecha">
                                 <div class="form-actions" style="margin-top:0;">
-                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Asignar a Todos</button>
+                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i>
+                                        Asignar a Todos</button>
                                 </div>
                             </form>
                         </div>
 
                         <!-- Bloque 2: Agregar Usuario Rápido -->
-                        <div style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); padding: 15px; border-radius: 8px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="const body=this.nextElementSibling; body.style.display = body.style.display === 'none' ? 'block' : 'none';">
-                                <h3 style="margin:0; color:#059669;"><i class="fa-solid fa-user-plus"></i> Agregar Nuevo Usuario al Directorio</h3>
-                                <span style="font-size:0.8rem; color:#059669; font-weight:600; user-select:none;">▼ Expandir</span>
+                        <div
+                            style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); padding: 15px; border-radius: 8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+                                onclick="const body=this.nextElementSibling; body.style.display = body.style.display === 'none' ? 'block' : 'none';">
+                                <h3 style="margin:0; color:#059669;"><i class="fa-solid fa-user-plus"></i> Agregar Nuevo
+                                    Usuario al Directorio</h3>
+                                <span style="font-size:0.8rem; color:#059669; font-weight:600; user-select:none;">▼
+                                    Expandir</span>
                             </div>
                             <div style="display:none; margin-top:15px;">
                                 <form id="form-usuario-preventivo-quick" class="form-row" style="align-items:flex-end;">
@@ -561,7 +591,8 @@
                                         <input type="text" id="uprev-area-q" placeholder="Ej: Producción" required>
                                     </div>
                                     <div class="form-actions" style="margin-top:0;">
-                                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-user-check"></i> Guardar Usuario</button>
+                                        <button type="submit" class="btn btn-success"><i
+                                                class="fa-solid fa-user-check"></i> Guardar Usuario</button>
                                     </div>
                                 </form>
                             </div>
@@ -571,11 +602,15 @@
                 </div>
 
                 <div class="panel panel-no-padding">
-                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div class="panel-header"
+                        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h2><i class="fa-solid fa-table-cells"></i> Monitoreo Preventivo — Matriz Anual</h2>
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <input type="text" id="filter-prev-usuario" class="form-control-sm" placeholder="Buscar Usuario" style="width:170px;" oninput="MainApp.renderizarPreventivoMatriz()">
-                            <input type="text" id="filter-prev-area" class="form-control-sm" placeholder="Buscar Área" style="width:140px;" oninput="MainApp.renderizarPreventivoMatriz()">
+                            <input type="text" id="filter-prev-usuario" class="form-control-sm"
+                                placeholder="Buscar Usuario" style="width:170px;"
+                                oninput="MainApp.renderizarPreventivoMatriz()">
+                            <input type="text" id="filter-prev-area" class="form-control-sm" placeholder="Buscar Área"
+                                style="width:140px;" oninput="MainApp.renderizarPreventivoMatriz()">
                         </div>
                     </div>
                     <div class="panel-body panel-no-padding">
@@ -594,7 +629,8 @@
                         <button class="btn-close" id="close-modal-prev-reg"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <div class="modal-body">
-                        <div id="prev-reg-info" style="margin-bottom:16px; padding:12px; background:rgba(5,150,105,0.05); border-radius:8px; border-left:4px solid #059669;">
+                        <div id="prev-reg-info"
+                            style="margin-bottom:16px; padding:12px; background:rgba(5,150,105,0.05); border-radius:8px; border-left:4px solid #059669;">
                             <p id="prev-reg-usuario" style="margin:0; font-weight:600; color:#1e293b;"></p>
                             <p id="prev-reg-periodo" style="margin:4px 0 0; font-size:0.82rem; color:#64748b;"></p>
                         </div>
@@ -607,15 +643,21 @@
                             <input type="hidden" id="prev-reg-id">
                             <div class="form-group full-width">
                                 <label for="prev-reg-notas">Notas del Mantenimiento (Opcional)</label>
-                                <input type="text" id="prev-reg-notas" placeholder="Ej: Limpieza realizada, ventiladores ok...">
+                                <input type="text" id="prev-reg-notas"
+                                    placeholder="Ej: Limpieza realizada, ventiladores ok...">
                             </div>
-                            <div class="form-actions" style="grid-column:1/-1; display:flex; justify-content:space-between; gap:10px;">
+                            <div class="form-actions"
+                                style="grid-column:1/-1; display:flex; justify-content:space-between; gap:10px;">
                                 <div>
-                                    <button type="button" class="btn btn-danger" id="btn-prev-reg-delete" style="display:none;" onclick="MainApp.eliminarRegistroPreventivo()"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                                    <button type="button" class="btn btn-danger" id="btn-prev-reg-delete"
+                                        style="display:none;" onclick="MainApp.eliminarRegistroPreventivo()"><i
+                                            class="fa-solid fa-trash"></i> Eliminar</button>
                                 </div>
                                 <div style="display:flex; gap:10px;">
-                                    <button type="button" class="btn btn-secondary" id="btn-prev-reg-cancel">Cancelar</button>
-                                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Guardar</button>
+                                    <button type="button" class="btn btn-secondary"
+                                        id="btn-prev-reg-cancel">Cancelar</button>
+                                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i>
+                                        Guardar</button>
                                 </div>
                             </div>
                         </form>
@@ -623,7 +665,7 @@
                 </div>
             </div>
 
-<!-- ══════════════════════════════════════════
+            <!-- ══════════════════════════════════════════
                  VISTA: BITÁCORA DE EVIDENCIAS
             ══════════════════════════════════════════ -->
             <div class="view-section" id="view-tareas-bitacora">
@@ -639,7 +681,8 @@
                             <div class="form-row">
                                 <div class="form-group full-width">
                                     <label for="bitacora-titulo">Título de la Evidencia o Actividad</label>
-                                    <input type="text" id="bitacora-titulo" placeholder="Ej: Limpieza de racks, Ajuste de cableado..." required>
+                                    <input type="text" id="bitacora-titulo"
+                                        placeholder="Ej: Limpieza de racks, Ajuste de cableado..." required>
                                 </div>
                             </div>
                             <div class="form-group full-width">
@@ -713,7 +756,8 @@
                                 <input type="text" id="cl-responsable" placeholder="Ej: Juan Pérez" required>
                             </div>
                             <div class="form-actions" style="grid-column:1/-1;">
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar Tarea</button>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar
+                                    Tarea</button>
                             </div>
                         </form>
                     </div>
@@ -721,36 +765,40 @@
 
                 <!-- ── BANNER DE SEMANA ── -->
                 <div class="checklist-week-banner panel">
-                    <div class="panel-body" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        
+                    <div class="panel-body"
+                        style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+
                         <!-- Izquierda: Semana actual + badge de estado -->
                         <div class="week-banner-left" style="display: flex; gap: 15px; align-items: center;">
                             <div class="week-banner-icon" style="font-size: 2rem; color: #10b981;">
                                 <i class="fa-solid fa-calendar-week"></i>
                             </div>
                             <div>
-                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; font-weight: 600;">SEMANA ACTIVA</p>
-                                <span id="checklist-semana-label" class="semana-label-badge activa" style="font-size: 1.2rem; font-weight: 800; color: #1e293b;">—</span>
-                                <span id="checklist-semana-badge" class="week-status-badge badge-activa" style="margin-left: 10px; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: rgba(16,185,129,0.1); color: #10b981; font-weight: 700;">
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; font-weight: 600;">SEMANA ACTIVA
+                                </p>
+                                <span id="checklist-semana-label" class="semana-label-badge activa"
+                                    style="font-size: 1.2rem; font-weight: 800; color: #1e293b;">—</span>
+                                <span id="checklist-semana-badge" class="week-status-badge badge-activa"
+                                    style="margin-left: 10px; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: rgba(16,185,129,0.1); color: #10b981; font-weight: 700;">
                                     <i class="fa-solid fa-clock"></i> En curso
                                 </span>
                             </div>
                         </div>
 
                         <!-- Derecha: Historial y Acciones -->
-                        <div class="week-banner-right" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div class="week-banner-right"
+                            style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                             <div class="form-group" style="margin:0; display:flex; align-items:center; gap:8px;">
-                                <label style="margin:0; font-size:0.85rem;"><i class="fa-solid fa-history"></i> Historial:</label>
+                                <label style="margin:0; font-size:0.85rem;"><i class="fa-solid fa-history"></i>
+                                    Historial:</label>
                                 <select id="checklist-semana-selector" class="form-select form-control-sm">
                                     <option value="">— Semanas —</option>
                                 </select>
                             </div>
                             <div class="form-group" style="margin:0; display:flex; align-items:center; gap:8px;">
                                 <i class="fa-solid fa-user-tie" style="color:#64748b;"></i>
-                                <input type="text" id="checklist-filter-resp"
-                                       class="form-control-sm"
-                                       placeholder="Filtrar responsable..."
-                                       style="width: 150px;">
+                                <input type="text" id="checklist-filter-resp" class="form-control-sm"
+                                    placeholder="Filtrar responsable..." style="width: 150px;">
                             </div>
                             <button id="btn-nueva-semana" class="btn btn-outline btn-sm">
                                 <i class="fa-solid fa-calendar-plus"></i> Nueva Semana
@@ -770,14 +818,16 @@
                 <div class="panel panel-no-padding">
                     <div class="panel-body" style="padding:0;">
                         <div class="table-wrap">
-                            <table class="preventivo-table checklist-table" id="checklist-table-main" style="width: 100%; border-collapse: collapse;">
+                            <table class="preventivo-table checklist-table" id="checklist-table-main"
+                                style="width: 100%; border-collapse: collapse;">
                                 <thead>
                                     <tr>
                                         <th style="width:300px; padding-left: 24px;">TAREAS FIJAS ASIGNADAS</th>
                                         <th style="width:110px;">PERIODICIDAD</th>
                                         <th class="day-th" title="Lunes" style="width:45px; text-align:center;">L</th>
                                         <th class="day-th" title="Martes" style="width:45px; text-align:center;">M</th>
-                                        <th class="day-th" title="Miércoles" style="width:45px; text-align:center;">M</th>
+                                        <th class="day-th" title="Miércoles" style="width:45px; text-align:center;">M
+                                        </th>
                                         <th class="day-th" title="Jueves" style="width:45px; text-align:center;">J</th>
                                         <th class="day-th" title="Viernes" style="width:45px; text-align:center;">V</th>
                                         <th style="width:180px; text-align:center;">ESTADO</th>
@@ -813,7 +863,8 @@
                                 <input type="text" id="uprev-area" placeholder="Ej: Producción" required>
                             </div>
                             <div class="form-actions" style="margin-top:0;">
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar Usuario</button>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar
+                                    Usuario</button>
                             </div>
                         </form>
                     </div>
@@ -839,12 +890,13 @@
                 </div>
             </div>
 
-<!-- ══════════════════════════════════════════
+            <!-- ══════════════════════════════════════════
                  VISTA: PRODUCTOS
             ══════════════════════════════════════════ -->
             <div class="view-section active" id="view-productos">
                 <div class="panel">
-                    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div class="panel-header"
+                        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <h2><i class="fa-solid fa-box-open"></i> Catálogo de Productos</h2>
                         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                             <div class="filters" style="display:flex; gap:10px;">
@@ -1178,9 +1230,9 @@
     <script src="js/ui/inventarioUI.js?v=1.1"></script>
     <script src="js/ui/tareasUI.js?v=1.1"></script>
     <script src="js/ui/checklistUI.js?v=1.1"></script>
-    
+
     <script src="js/boot.js?v=1.1"></script>
-    
+
     <script src="js/app.js?v=1.1"></script>
     <!-- Controllers -->
     <script src="js/controllers/inventarioController.js?v=1.1"></script>
@@ -1241,20 +1293,37 @@
                 <button class="btn-close" id="close-modal-logs"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div id="log-task-info" style="margin-bottom:20px;padding:15px;background:rgba(99,102,241,0.05);border-radius:10px;border-left:4px solid #6366f1;">
+                <div id="log-task-info"
+                    style="margin-bottom:20px;padding:15px;background:rgba(99,102,241,0.05);border-radius:10px;border-left:4px solid #6366f1;">
                     <h3 id="modal-log-task-name" style="margin:0;color:#1e293b;font-size:1rem;">Nombre de la Tarea</h3>
-                    <p id="modal-log-task-id" style="margin:5px 0 0;font-size:0.85rem;color:#64748b;font-family:monospace;">ID: TS-000</p>
+                    <p id="modal-log-task-id"
+                        style="margin:5px 0 0;font-size:0.85rem;color:#64748b;font-family:monospace;">ID: TS-000</p>
                 </div>
-                <form id="form-log-diario" class="mant-form" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:25px;padding:15px;border:1px dashed #cbd5e1;border-radius:8px;">
-                    <div class="form-group"><label for="log-fecha">Fecha</label><input type="date" id="log-fecha" required></div>
-                    <div class="form-group"><label for="log-inicio">Hora Inicio</label><input type="time" id="log-inicio" required></div>
-                    <div class="form-group"><label for="log-fin">Hora Fin</label><input type="time" id="log-fin" required></div>
-                    <div class="form-group full-width" style="grid-column:1/-1;"><label for="log-notas">Notas (Opcional)</label><input type="text" id="log-notas" placeholder="¿Qué se hizo hoy?"></div>
-                    <div class="form-actions" style="grid-column:1/-1;margin-top:0;"><button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-plus-circle"></i> Agregar Reporte del Día</button></div>
+                <form id="form-log-diario" class="mant-form"
+                    style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:25px;padding:15px;border:1px dashed #cbd5e1;border-radius:8px;">
+                    <div class="form-group"><label for="log-fecha">Fecha</label><input type="date" id="log-fecha"
+                            required></div>
+                    <div class="form-group"><label for="log-inicio">Hora Inicio</label><input type="time"
+                            id="log-inicio" required></div>
+                    <div class="form-group"><label for="log-fin">Hora Fin</label><input type="time" id="log-fin"
+                            required></div>
+                    <div class="form-group full-width" style="grid-column:1/-1;"><label for="log-notas">Notas
+                            (Opcional)</label><input type="text" id="log-notas" placeholder="¿Qué se hizo hoy?"></div>
+                    <div class="form-actions" style="grid-column:1/-1;margin-top:0;"><button type="submit"
+                            class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-plus-circle"></i> Agregar
+                            Reporte del Día</button></div>
                 </form>
                 <div class="table-wrap">
                     <table class="preventivo-table">
-                        <thead><tr><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Total</th><th>Acción</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th>Total</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
                         <tbody id="tbody-logs-diarios"></tbody>
                     </table>
                 </div>
@@ -1262,4 +1331,5 @@
         </div>
     </div>
 </body>
+
 </html>
