@@ -191,6 +191,10 @@
                             <i class="fa-solid fa-camera"></i>
                             <span>Bitácora</span>
                         </li>
+                        <li data-tareas-view="checklist" onclick="MainApp.switchTareasView('checklist')">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>Checklist Semanal</span>
+                        </li>
                     </ul>
 
                     <!-- Sección Administración (Eliminada por redundancia según solicitud del usuario) -->
@@ -648,8 +652,8 @@
                                     <input type="date" id="bitacora-fecha" required>
                                 </div>
                                 <div class="form-group field-half">
-                                    <label for="bitacora-file">Archivo (Imagen o PDF)</label>
-                                    <input type="file" id="bitacora-file" accept="image/*,.pdf" required>
+                                    <label for="bitacora-file">Archivo (Imagen, PDF o ZIP)</label>
+                                    <input type="file" id="bitacora-file" accept="image/*,.pdf,.zip,.rar,.7z" required>
                                 </div>
                             </div>
                             <div class="form-actions">
@@ -668,6 +672,123 @@
                     <div class="panel-body">
                         <div class="bitacora-grid" id="bitacora-grid">
                             <!-- Cards de evidencias -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════
+                 VISTA: CHECKLIST SEMANAL
+            ══════════════════════════════════════════ -->
+            <div class="view-section" id="view-tareas-checklist">
+                <!-- Panel Superior: Agregar Tarea + Navegación -->
+                <div class="panel mant-add-panel">
+                    <div class="panel-header" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <h2><i class="fa-solid fa-list-check"></i> Agregar Tarea Adicional</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form id="form-checklist-nueva" class="form-grid">
+                            <div class="form-group">
+                                <label for="cl-nombre">Nombre de la Tarea</label>
+                                <input type="text" id="cl-nombre" placeholder="Ej: Revisión de servidores" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cl-area">Sección</label>
+                                <select id="cl-area" required>
+                                    <option value="Infraestructura">Infraestructura</option>
+                                    <option value="Comunicaciones">Comunicaciones</option>
+                                    <option value="Gestión Administrativa">Gestión Administrativa</option>
+                                    <option value="Otras Tareas">Otras Tareas</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="cl-periodicidad">Periodicidad</label>
+                                <select id="cl-periodicidad">
+                                    <option value="Diario">Diario</option>
+                                    <option value="Semanal">Semanal</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="cl-responsable">Responsable</label>
+                                <input type="text" id="cl-responsable" placeholder="Ej: Juan Pérez" required>
+                            </div>
+                            <div class="form-actions" style="grid-column:1/-1;">
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Agregar Tarea</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ── BANNER DE SEMANA ── -->
+                <div class="checklist-week-banner panel">
+                    <div class="panel-body" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        
+                        <!-- Izquierda: Semana actual + badge de estado -->
+                        <div class="week-banner-left" style="display: flex; gap: 15px; align-items: center;">
+                            <div class="week-banner-icon" style="font-size: 2rem; color: #10b981;">
+                                <i class="fa-solid fa-calendar-week"></i>
+                            </div>
+                            <div>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; font-weight: 600;">SEMANA ACTIVA</p>
+                                <span id="checklist-semana-label" class="semana-label-badge activa" style="font-size: 1.2rem; font-weight: 800; color: #1e293b;">—</span>
+                                <span id="checklist-semana-badge" class="week-status-badge badge-activa" style="margin-left: 10px; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; background: rgba(16,185,129,0.1); color: #10b981; font-weight: 700;">
+                                    <i class="fa-solid fa-clock"></i> En curso
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Derecha: Historial y Acciones -->
+                        <div class="week-banner-right" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <div class="form-group" style="margin:0; display:flex; align-items:center; gap:8px;">
+                                <label style="margin:0; font-size:0.85rem;"><i class="fa-solid fa-history"></i> Historial:</label>
+                                <select id="checklist-semana-selector" class="form-select form-control-sm">
+                                    <option value="">— Semanas —</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-user-tie" style="color:#64748b;"></i>
+                                <input type="text" id="checklist-filter-resp"
+                                       class="form-control-sm"
+                                       placeholder="Filtrar responsable..."
+                                       style="width: 150px;">
+                            </div>
+                            <button id="btn-nueva-semana" class="btn btn-outline btn-sm">
+                                <i class="fa-solid fa-calendar-plus"></i> Nueva Semana
+                            </button>
+                            <button id="btn-cerrar-semana" class="btn btn-warning btn-sm">
+                                <i class="fa-solid fa-lock"></i> Cerrar Semana
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ── RESUMEN GLOBAL ── -->
+                <div id="checklist-resumen-global" style="margin-bottom: 24px;"></div>
+
+                <!-- ── TABLA DEL CHECKLIST ── -->
+                <div class="panel panel-no-padding">
+                    <div class="panel-body" style="padding:0;">
+                        <div class="table-wrap">
+                            <table class="preventivo-table checklist-table" id="checklist-table-main" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:300px; padding-left: 24px;">TAREAS FIJAS ASIGNADAS</th>
+                                        <th style="width:110px;">PERIODICIDAD</th>
+                                        <th class="day-th" title="Lunes" style="width:45px; text-align:center;">L</th>
+                                        <th class="day-th" title="Martes" style="width:45px; text-align:center;">M</th>
+                                        <th class="day-th" title="Miércoles" style="width:45px; text-align:center;">M</th>
+                                        <th class="day-th" title="Jueves" style="width:45px; text-align:center;">J</th>
+                                        <th class="day-th" title="Viernes" style="width:45px; text-align:center;">V</th>
+                                        <th style="width:180px; text-align:center;">ESTADO</th>
+                                        <th style="width:200px;">RESPONSABLE</th>
+                                        <th style="width:60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="checklist-tbody">
+                                    <!-- Renderizado dinámico -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1056,6 +1177,7 @@
     <!-- UI Modules -->
     <script src="js/ui/inventarioUI.js?v=1.1"></script>
     <script src="js/ui/tareasUI.js?v=1.1"></script>
+    <script src="js/ui/checklistUI.js?v=1.1"></script>
     
     <script src="js/boot.js?v=1.1"></script>
     
@@ -1063,6 +1185,7 @@
     <!-- Controllers -->
     <script src="js/controllers/inventarioController.js?v=1.1"></script>
     <script src="js/controllers/tareasController.js?v=1.1"></script>
+    <script src="js/controllers/checklistController.js?v=1.1"></script>
 
     <!-- Partículas animadas para el portal -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
