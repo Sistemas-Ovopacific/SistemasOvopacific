@@ -14,6 +14,8 @@ const MainApp = {
         tareasSemanales: [],
         planPreventivo: [],
         bitacora: [],
+        checklistBase: [],
+        checklistSeguimiento: [],
         chartInstance: null,
         vistaActual: '', // Vista activa (ej: 'productos', 'tareas-recurrentes')
         moduloActual: '', // Módulo principal (ej: 'inventario', 'tareas')
@@ -27,6 +29,9 @@ const MainApp = {
         
         // Generar checkboxes para tareas mensuales
         ui.generarCheckboxesMeses();
+        
+        // Inicializar Checklist Semanal
+        if (window.checklistController) checklistController.init();
         
         // Verificar sesión persistente
         const session = api.getSession();
@@ -302,6 +307,7 @@ const MainApp = {
             'dashboard': ['Dashboard de Cumplimiento', 'Indicadores Clave de Rendimiento'],
             'recurrentes': ['Mantenimiento Mensual', 'Programación de actividades fijas por mes'],
             'semanales': ['Seguimiento Semanal', 'Actividades de rutina de Lunes a Viernes'],
+            'checklist': ['Tablero Checklist Semanal', 'Seguimiento detallado de tareas diarias'],
             'preventivo': ['Plan Preventivo', 'Seguimiento de mantenimiento por equipo'],
             'usuarios': ['Responsables de Mantenimiento', 'Gestión del personal y equipos asignados'],
             'bitacora': ['Bitácora de Evidencias', 'Registro fotográfico de actividades realizadas']
@@ -360,6 +366,8 @@ const MainApp = {
             this.state.planPreventivo = pPrev;
             this.state.usuariosPreventivo = uPrev;
             this.state.usuariosAdmin = Array.isArray(data.usuarios) ? data.usuarios : [];
+            this.state.checklistBase = data.checklistBase || [];
+            this.state.checklistSeguimiento = data.checklistSeguimiento || [];
 
             ui.setConexionStatus('ok');
             this.actualizarUI();
@@ -408,6 +416,9 @@ const MainApp = {
             ui.renderizarPreventivoV3(this.state.planPreventivo);
             ui.renderizarBitacoraV3(this.state.bitacora);
             ui.actualizarMiniStatsTareas(this.state);
+            if (vistaActual === 'tareas-checklist' && window.checklistController) {
+                checklistController.injectData(this.state.checklistSeguimiento, this.state.checklistBase);
+            }
         }
         if (vistaActual === 'productos') ui.renderizarProductos(productos);
         if (vistaActual === 'entradas') ui.renderizarEntradas(this.state.entradas);

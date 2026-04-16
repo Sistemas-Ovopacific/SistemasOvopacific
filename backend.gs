@@ -12,16 +12,18 @@ const NOMBRES_HOJAS = {
   PLAN_PREVENTIVO: 'MantenimientoPreventivo',
   USUARIOS_PREVENTIVO: 'UsuariosPreventivo',
   BITACORA: 'Bitacora',
-  USUARIOS: 'Usuarios'
+  USUARIOS: 'Usuarios',
+  TAREAS_BASE: 'TareasBase',
+  SEGUIMIENTO_SEMANAL: 'SeguimientoSemanal'
 };
 
-const SPREADSHEET_ID = 'PONER_ID_AQUÍ';
-const DRIVE_FOLDER_ID = 'PONER_ID_AQUÍ'; 
+const SPREADSHEET_ID = '1PZidJkgrygvbbebKYcWAQjDbvEvLxpuEWhkHF3nsNrI';
+const DRIVE_FOLDER_ID = '1MRlf29HmpJkc5Zi8_yjrQikKv0cWvVqB'; 
 
 function getSpreadsheet() {
   try {
     // Si el ID parece ser el de ejemplo o está vacío, intentamos la activa
-    if (!SPREADSHEET_ID || SPREADSHEET_ID.length < 15 || SPREADSHEET_ID.includes('TU_ID_DE_HOJA') || SPREADSHEET_ID.includes('PONER_ID')) {
+    if (!SPREADSHEET_ID || SPREADSHEET_ID.length < 15 || SPREADSHEET_ID.includes('TU_ID_DE_HOJA')) {
       const active = SpreadsheetApp.getActiveSpreadsheet();
       if (active) return active;
       throw new Error("El script no está vinculado a ninguna hoja activa.");
@@ -67,13 +69,20 @@ function doGet(e) {
   try {
     switch (action) {
       case 'login': return login(e.parameter.usuario, e.parameter.password);
+      case 'getChecklistOnly':
+        return respuestaJSON({
+          checklistBase: leerHoja(NOMBRES_HOJAS.TAREAS_BASE),
+          checklistSeguimiento: leerHoja(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL)
+        });
       case 'getTareasData':
         return respuestaJSON({
           tareasRecurrentes: leerHoja(NOMBRES_HOJAS.TAREAS_MENSUALES),
           tareasSemanales: leerHoja(NOMBRES_HOJAS.TAREAS_SEMANALES),
           planPreventivo: leerHoja(NOMBRES_HOJAS.PLAN_PREVENTIVO),
           usuariosPreventivo: leerHoja(NOMBRES_HOJAS.USUARIOS_PREVENTIVO),
-          bitacora: leerHoja(NOMBRES_HOJAS.BITACORA)
+          bitacora: leerHoja(NOMBRES_HOJAS.BITACORA),
+          checklistBase: leerHoja(NOMBRES_HOJAS.TAREAS_BASE),
+          checklistSeguimiento: leerHoja(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL)
         });
       case 'getProductos': return respuestaJSON(leerHoja(NOMBRES_HOJAS.PRODUCTOS));
       case 'getEntradas': return respuestaJSON(leerHoja(NOMBRES_HOJAS.ENTRADAS));
@@ -90,7 +99,9 @@ function doGet(e) {
           tareasSemanales: leerHoja(NOMBRES_HOJAS.TAREAS_SEMANALES),
           planPreventivo: leerHoja(NOMBRES_HOJAS.PLAN_PREVENTIVO),
           usuariosPreventivo: leerHoja(NOMBRES_HOJAS.USUARIOS_PREVENTIVO),
-          bitacora: leerHoja(NOMBRES_HOJAS.BITACORA)
+          bitacora: leerHoja(NOMBRES_HOJAS.BITACORA),
+          checklistBase: leerHoja(NOMBRES_HOJAS.TAREAS_BASE),
+          checklistSeguimiento: leerHoja(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL)
         });
       default: return respuestaJSON({ error: "Acción no reconocida" });
     }
@@ -122,6 +133,11 @@ function doPost(e) {
       case 'deletePreventivo': return respuestaJSON(eliminarItem(NOMBRES_HOJAS.PLAN_PREVENTIVO, payload.id, 'id'));
       case 'addRegistroPreventivo': return respuestaJSON(guardarItem(NOMBRES_HOJAS.PLAN_PREVENTIVO, payload.registro, 'id'));
       case 'uploadEvidencia': return respuestaJSON(subirEvidenciaDrive(payload));
+      case 'syncChecklist': return respuestaJSON(syncChecklistSemanal(payload.semana, payload.usuarioSistema || payload.UsuarioSistema));
+      case 'updateChecklist': return respuestaJSON(guardarItem(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL, payload.item, 'id'));
+      case 'eliminarChecklistItem': return respuestaJSON(eliminarItem(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL, payload.id, 'id'));
+      case 'guardarTareaBase': return respuestaJSON(guardarItem(NOMBRES_HOJAS.TAREAS_BASE, payload.tarea, 'id'));
+      case 'eliminarTareaBase': return respuestaJSON(eliminarItem(NOMBRES_HOJAS.TAREAS_BASE, payload.id, 'id'));
       default: return respuestaJSON({ error: "Acción no reconocida" });
     }
   } catch (err) { return respuestaJSON({ error: err.message }); }
@@ -346,20 +362,7 @@ function subirEvidenciaDrive(p) {
   
   const bytes = Utilities.base64Decode(p.base64Data);
   const blob = Utilities.newBlob(bytes, p.mimeType, p.filename);
-  // Si el ID es el de ejemplo o está vacío, creamos una carpeta por defecto
-  let parent;
-  if (!DRIVE_FOLDER_ID || DRIVE_FOLDER_ID.includes('TU_ID_DE_CARPETA') || DRIVE_FOLDER_ID.includes('PONER_ID')) {
-    const folders = DriveApp.getFoldersByName("Evidencias Sistemas");
-    parent = folders.hasNext() ? folders.next() : DriveApp.createFolder("Evidencias Sistemas");
-  } else {
-    try {
-      parent = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    } catch (e) {
-      // Si el ID manual falla, caer en la carpeta por defecto
-      const folders = DriveApp.getFoldersByName("Evidencias Sistemas");
-      parent = folders.hasNext() ? folders.next() : DriveApp.createFolder("Evidencias Sistemas");
-    }
-  }
+  let parent = DRIVE_FOLDER_ID ? DriveApp.getFolderById(DRIVE_FOLDER_ID) : DriveApp.createFolder("Evidencias Sistemas");
   let folder = parent.createFolder((p.Titulo || "Doc").replace(/[/\\?%*:|"<>]/g, '-') + "_" + new Date().getTime());
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -396,5 +399,98 @@ function login(usuario, password) {
     return respuestaJSON({ error: "Usuario o contraseña incorrectos" });
   } catch (err) {
     return respuestaJSON({ error: "Error en login: " + err.message });
+  }
+}
+
+// ==============================================================================
+// FUNCIONES PARA CHECKLIST SEMANAL
+// ==============================================================================
+
+function syncChecklistSemanal(semanaLabel, usuarioSistema) {
+  const ss = getSpreadsheet();
+  const shBase = getSheetSafe(NOMBRES_HOJAS.TAREAS_BASE);
+  if (!shBase) return { error: "No existe la hoja TareasBase" };
+  
+  // Asegurar estructura
+  initChecklistSheets();
+  
+  const baseData = leerHoja(NOMBRES_HOJAS.TAREAS_BASE);
+  const segData = leerHoja(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL);
+  
+  const user = (usuarioSistema || "").toLowerCase();
+  
+  // Filtrar tareas base
+  const tareasBase = baseData.filter(t => {
+    const taskUser = (t.usuariosistema || '').toLowerCase().trim();
+    if (user === 'admin') return true;
+    if (taskUser === '') return true;
+    return taskUser === user;
+  });
+  
+  const generados = [];
+  tareasBase.forEach(t => {
+    const tareaId = t.id || t.ID;
+    // Verificar si ya existe en esta semana
+    const existe = segData.some(s => 
+      String(s.tareaid) === String(tareaId) && 
+      (String(s.semanalabel) === String(semanaLabel) || String(s.semana) === String(semanaLabel))
+    );
+    
+    if (!existe) {
+      const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      const mesActual = MESES[new Date().getMonth()];
+      
+      const row = {
+        id: "SEG-" + semanaLabel.replace(/\s/g,'-') + "-" + tareaId,
+        TareaId: tareaId,
+        Nombre: t.Nombre || t.nombre,
+        Area: t.Area || t.area,
+        Periodicidad: t.Periodicidad || t.periodicidad,
+        Responsable: t.Responsable || t.responsable,
+        SemanaLabel: semanaLabel,
+        Semana: semanaLabel,
+        Mes: mesActual,
+        L: 0, M: 0, M2: 0, J: 0, V: 0, S: 0,
+        Estado: "0%",
+        UsuarioSistema: t.usuariosistema || usuarioSistema,
+        Cerrada: false
+      };
+      guardarItem(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL, row, 'id');
+      generados.push(row);
+    }
+  });
+  
+  return { success: true, generados: generados, total: generados.length };
+}
+
+/**
+ * Función manual para inicializar las hojas del checklist si no existen.
+ */
+function initChecklistSheets() {
+  const ss = getSpreadsheet();
+  
+  // 1. TareasBase
+  if (!getSheetSafe(NOMBRES_HOJAS.TAREAS_BASE)) {
+    const cabBase = ["id", "Nombre", "Area", "Periodicidad", "Responsable", "UsuarioSistema"];
+    ss.insertSheet(NOMBRES_HOJAS.TAREAS_BASE).appendRow(cabBase);
+  }
+  
+  // 2. SeguimientoSemanal
+  if (!getSheetSafe(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL)) {
+    const cabSeg = ["id", "TareaId", "Nombre", "Area", "Periodicidad", "Responsable", "SemanaLabel", "Semana", "Mes", "L", "M", "M2", "J", "V", "S", "Estado", "UsuarioSistema", "Cerrada"];
+    ss.insertSheet(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL).appendRow(cabSeg);
+  } else {
+    // Verificar si falta la columna Mes o Cerrada
+    const sh = getSheetSafe(NOMBRES_HOJAS.SEGUIMIENTO_SEMANAL);
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => h.toString().toLowerCase());
+    
+    if (!headers.includes("mes")) {
+      const semIdx = headers.indexOf("semana");
+      sh.insertColumnAfter(semIdx !== -1 ? semIdx + 1 : 1);
+      sh.getRange(1, (semIdx !== -1 ? semIdx + 2 : 2)).setValue("Mes");
+    }
+    if (!headers.includes("cerrada")) {
+      sh.getRange(1, sh.getLastColumn() + 1).setValue("Cerrada");
+    }
   }
 }

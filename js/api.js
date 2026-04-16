@@ -2,7 +2,7 @@
 //  api.js — Módulo de Comunicación con Google Apps Script
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB9kspo_LX0BJoH8ZmH1A4ENN91Sn9vHoLQppV7AI8OlES1NXCJjISj_BGQmUxXGTk/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwiMpv-omhDCBgiVQMf1q7Ez-lgkJTAZvLv8erF1uGHYXh5Jr1d8wL14llqODyIiuPC/exec';
 
 const api = {
     // Clave para localStorage
@@ -27,10 +27,25 @@ const api = {
         window.location.reload();
     },
 
-    async get(action) {
-        const res = await fetch(`${GAS_URL}?action=${action}&t=${Date.now()}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+    async get(action, params = {}) {
+        let url = `${GAS_URL}?action=${action}`;
+        for (let key in params) {
+            url += `&${key}=${encodeURIComponent(params[key])}`;
+        }
+        url += `&t=${Date.now()}`;
+
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                redirect: 'follow'
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const text = await res.text();
+            return JSON.parse(text);
+        } catch (err) {
+            throw err;
+        }
     },
 
     async getAllData() {
@@ -38,17 +53,10 @@ const api = {
     },
 
     async login(usuario, password) {
-        const u = encodeURIComponent(usuario);
-        const p = encodeURIComponent(password);
-        console.log('[API] Intentando login para:', usuario);
-        const res = await fetch(`${GAS_URL}?action=login&usuario=${u}&password=${p}&t=${Date.now()}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        console.log('[API] Respuesta del servidor:', data);
-        if (data.error) throw new Error(data.error);
-
-        // Almacenar sesión si es exitoso
-        this.setSession(data);
+        const data = await this.get('login', { usuario, password });
+        if (data && !data.error) {
+            this.setSession(data);
+        }
         return data;
     },
 
